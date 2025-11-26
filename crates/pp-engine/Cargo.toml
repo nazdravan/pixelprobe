@@ -1,0 +1,22 @@
+[package]
+name = "pp-engine"
+description = "Session, command registry, history and panic guard"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[package.metadata.pixelprobe]
+layer = 5
+
+[dependencies]
+pp-core.workspace = true
+pp-patterns.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true

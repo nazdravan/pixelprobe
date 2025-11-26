@@ -1,0 +1,16 @@
+[package]
+name = "pixelprobe"
+description = "Monitor test utility: display info, motion test, test patterns, pixel refresh"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[package.metadata.pixelprobe]
+layer = 7
+
+[dependencies]
+pp-ui.workspace = true
+eframe.workspace = true
+
+[lints]
+workspace = true

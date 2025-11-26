@@ -1,0 +1,18 @@
+[package]
+name = "pp-patterns"
+description = "Test pattern and frame generation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[package.metadata.pixelprobe]
+layer = 2
+
+[dependencies]
+pp-core.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true

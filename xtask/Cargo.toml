@@ -1,0 +1,14 @@
+[package]
+name = "xtask"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[package.metadata.pixelprobe]
+layer = 7
+
+[dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

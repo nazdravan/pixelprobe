@@ -1,0 +1,37 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "app", "xtask"]
+default-members = ["app"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+repository = "https://github.com/nazdravan/pixelprobe"
+rust-version = "1.88"
+
+[workspace.dependencies]
+pp-core = { path = "crates/pp-core" }
+pp-patterns = { path = "crates/pp-patterns" }
+pp-engine = { path = "crates/pp-engine" }
+pp-ui = { path = "crates/pp-ui" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+proptest = "1"
+egui = "0.37"
+eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "wayland", "x11"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unreachable = "deny"
+unimplemented = "deny"
+indexing_slicing = "deny"
+
+[profile.release]
+lto = "thin"

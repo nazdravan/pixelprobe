@@ -1,0 +1,20 @@
+[package]
+name = "pp-ui"
+description = "egui panels for pixelprobe"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[package.metadata.pixelprobe]
+layer = 6
+
+[dependencies]
+pp-core.workspace = true
+pp-engine.workspace = true
+egui.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true

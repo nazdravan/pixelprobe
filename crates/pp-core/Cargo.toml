@@ -1,0 +1,18 @@
+[package]
+name = "pp-core"
+description = "Colour, geometry and the test-session model"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[package.metadata.pixelprobe]
+layer = 0
+
+[dependencies]
+serde.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true
