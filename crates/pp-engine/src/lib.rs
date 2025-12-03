@@ -3,6 +3,7 @@
 //! Every user-visible action is a [`CommandSpec`] in the [`Registry`]. UI code, the CLI and
 //! the control channel all go through [`Engine::run`]; nothing else mutates the [`Doc`].
 
+pub mod control;
 mod error;
 mod history;
 mod registry;

@@ -12,5 +12,8 @@ layer = 7
 pp-ui.workspace = true
 eframe.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pp-control.workspace = true
+
 [lints]
 workspace = true

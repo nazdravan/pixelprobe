@@ -1,26 +1,16 @@
 //! pixelprobe desktop binary.
+//!
+//! `pixelprobe [--control PORT]` — with `--control`, a local JSON-lines control channel is
+//! opened on `127.0.0.1:PORT` (see the `pp-control` crate).
 
 #[cfg(not(target_arch = "wasm32"))]
-fn main() -> eframe::Result {
-    let options = eframe::NativeOptions {
-        viewport: pp_ui::egui::ViewportBuilder::default()
-            .with_title("pixelprobe")
-            .with_inner_size([740.0, 620.0]),
-        ..Default::default()
-    };
-    eframe::run_native("pixelprobe", options, Box::new(|_cc| Ok(Box::new(App))))
+mod native;
+
+#[cfg(not(target_arch = "wasm32"))]
+fn main() -> std::process::ExitCode {
+    native::main()
 }
 
-// The web entry point is a separate gap; the wasm target only has to compile.
+// The web entry point is a separate gap (G12); the wasm target only has to compile.
 #[cfg(target_arch = "wasm32")]
 fn main() {}
-
-#[cfg(not(target_arch = "wasm32"))]
-struct App;
-
-#[cfg(not(target_arch = "wasm32"))]
-impl eframe::App for App {
-    fn ui(&mut self, ui: &mut pp_ui::egui::Ui, _frame: &mut eframe::Frame) {
-        ui.heading("pixelprobe");
-    }
-}
