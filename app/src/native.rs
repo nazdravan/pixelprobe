@@ -58,6 +58,7 @@ pub fn main() -> ExitCode {
             Ok(Box::new(App {
                 engine: Engine::new(),
                 control,
+                status: None,
             }))
         }),
     );
@@ -73,6 +74,8 @@ pub fn main() -> ExitCode {
 struct App {
     engine: Engine,
     control: Option<ControlServer>,
+    /// Last command error or caught UI panic, shown in a status line.
+    status: Option<String>,
 }
 
 impl eframe::App for App {
@@ -85,10 +88,33 @@ impl eframe::App for App {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ui, |ui| {
-            ui.heading("pixelprobe");
-            ui.label(format!("screen: {:?}", self.engine.doc().screen));
-        });
+        if let Some(msg) = &self.status {
+            let mut dismiss = false;
+            egui::Panel::top("status").show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.colored_label(ui.visuals().warn_fg_color, msg);
+                    dismiss = ui.small_button("✕").clicked();
+                });
+            });
+            if dismiss {
+                self.status = None;
+            }
+        }
+        // Panic guard for the frame: panels only read the engine, so a panic while drawing
+        // cannot corrupt the document; report it and keep running.
+        let engine = &self.engine;
+        let drawn =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| pp_ui::show(ui, engine)));
+        match drawn {
+            Ok(actions) => {
+                for action in actions {
+                    if let Err(e) = self.engine.run(action.id, action.params) {
+                        self.status = Some(e.to_string());
+                    }
+                }
+            }
+            Err(_) => self.status = Some("internal error while drawing; see the log".into()),
+        }
     }
 }
 

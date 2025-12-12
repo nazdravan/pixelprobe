@@ -83,6 +83,13 @@ impl Registry {
         r
     }
 
+    /// Built-ins plus every app command.
+    pub fn app() -> Self {
+        let mut r = Self::builtin();
+        crate::commands::register_app(&mut r);
+        r
+    }
+
     /// Add or replace a command.
     pub fn register(&mut self, spec: CommandSpec) {
         self.commands.insert(spec.id, spec);

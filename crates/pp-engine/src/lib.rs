@@ -3,6 +3,7 @@
 //! Every user-visible action is a [`CommandSpec`] in the [`Registry`]. UI code, the CLI and
 //! the control channel all go through [`Engine::run`]; nothing else mutates the [`Doc`].
 
+mod commands;
 pub mod control;
 mod error;
 mod history;
@@ -36,9 +37,9 @@ impl Default for Engine {
 }
 
 impl Engine {
-    /// An engine with the built-in commands registered.
+    /// An engine with all app commands registered.
     pub fn new() -> Self {
-        Self::with_registry(Registry::builtin())
+        Self::with_registry(Registry::app())
     }
 
     pub fn with_registry(registry: Registry) -> Self {
