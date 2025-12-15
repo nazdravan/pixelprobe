@@ -33,12 +33,7 @@ fn main_window_buttons_emit_commands() {
 
 #[test]
 fn every_screen_renders_and_closes() {
-    for id in [
-        "test.motion",
-        "test.pattern",
-        "test.pixel_refresh",
-        "app.about",
-    ] {
+    for id in ["test.motion", "test.pixel_refresh", "app.about"] {
         assert_eq!(
             click(Some(id), "Close"),
             vec![Action::new("view.close")],
@@ -80,4 +75,44 @@ fn shortcuts_trigger_enabled_commands() {
     // Disabled: Escape on the main window, undo with empty history.
     assert_eq!(press(None, none, egui::Key::Escape), vec![]);
     assert_eq!(press(None, egui::Modifiers::COMMAND, egui::Key::Z), vec![]);
+}
+
+#[test]
+fn pattern_screen_toolbar_and_keys() {
+    let none = egui::Modifiers::NONE;
+    assert_eq!(
+        press(Some("test.pattern"), none, egui::Key::ArrowRight),
+        vec![Action::new("pattern.next")]
+    );
+    assert_eq!(
+        press(Some("test.pattern"), none, egui::Key::ArrowLeft),
+        vec![Action::new("pattern.prev")]
+    );
+    assert_eq!(
+        press(Some("test.pattern"), none, egui::Key::Escape),
+        vec![Action::new("view.close")]
+    );
+    // Arrows do nothing outside the pattern test.
+    assert_eq!(press(None, none, egui::Key::ArrowRight), vec![]);
+}
+
+#[test]
+fn pattern_toolbar_buttons() {
+    for (label, id) in [
+        ("Next pattern (Right)", "pattern.next"),
+        ("Previous pattern (Left)", "pattern.prev"),
+    ] {
+        let mut engine = Engine::new();
+        engine.run("test.pattern", Value::Null).unwrap();
+        let mut harness = Harness::new_ui_state(
+            |ui, actions: &mut Vec<Action>| actions.extend(show(ui, &engine)),
+            Vec::new(),
+        );
+        harness.run();
+        // Icon buttons are found by their glyph; the label is the tooltip.
+        let glyph = if id == "pattern.next" { "›" } else { "‹" };
+        harness.get_by_label(glyph).click();
+        harness.run();
+        assert_eq!(harness.state(), &vec![Action::new(id)], "{label}");
+    }
 }

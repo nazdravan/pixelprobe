@@ -10,6 +10,7 @@ layer = 2
 
 [dependencies]
 pp-core.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

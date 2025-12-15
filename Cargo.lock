@@ -1894,6 +1894,7 @@ version = "0.1.0"
 dependencies = [
  "pp-core",
  "proptest",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1904,6 +1905,7 @@ dependencies = [
  "egui_kittest",
  "pp-core",
  "pp-engine",
+ "pp-patterns",
  "proptest",
 ]
 

@@ -2,7 +2,7 @@
 
 use crate::registry::always_enabled;
 use crate::{CommandSpec, Registry, Session, Value};
-use pp_core::Screen;
+use pp_core::{PatternId, Screen};
 
 /// Register every app command on top of the built-ins.
 pub fn register_app(r: &mut Registry) {
@@ -51,6 +51,64 @@ pub fn register_app(r: &mut Registry) {
             Ok(Value::Null)
         },
     });
+    register_patterns(r);
+}
+
+fn on_pattern_screen(s: &Session) -> Result<(), String> {
+    if s.doc.screen == Screen::PatternTest {
+        Ok(())
+    } else {
+        Err("the pattern test is not open".into())
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SetPattern {
+    pattern: PatternId,
+}
+
+fn register_patterns(r: &mut Registry) {
+    r.register(CommandSpec {
+        id: "pattern.next",
+        label: "Next pattern",
+        menu: "Pattern/Next",
+        shortcut: Some("Right"),
+        params: "",
+        undoable: false,
+        enabled: on_pattern_screen,
+        run: |s, _| {
+            s.doc.pattern = s.doc.pattern.next();
+            Ok(Value::Null)
+        },
+    });
+    r.register(CommandSpec {
+        id: "pattern.prev",
+        label: "Previous pattern",
+        menu: "Pattern/Previous",
+        shortcut: Some("Left"),
+        params: "",
+        undoable: false,
+        enabled: on_pattern_screen,
+        run: |s, _| {
+            s.doc.pattern = s.doc.pattern.prev();
+            Ok(Value::Null)
+        },
+    });
+    r.register(CommandSpec {
+        id: "pattern.set",
+        label: "Show pattern",
+        menu: "Pattern/Show...",
+        shortcut: None,
+        params: "{ pattern: \"smpte_bars\" | \"white\" | \"black\" | \"red\" | \"green\" | \"blue\" | \"gray50\" | \"gray_ramp\" | \"gray_steps\" | \"rgb_ramps\" | \"black_level\" | \"white_level\" | \"grid\" | \"checker_fine\" | \"checker_coarse\" }",
+        undoable: false,
+        enabled: always_enabled,
+        run: |s, p| {
+            let p: SetPattern = crate::params("pattern.set", p)?;
+            s.doc.pattern = p.pattern;
+            Ok(Value::Null)
+        },
+    });
 }
 
 /// A command that brings `screen` to the front. Navigation is not undoable.
@@ -87,7 +145,7 @@ fn open_screen(
 #[cfg(test)]
 mod tests {
     use crate::{Engine, Value};
-    use pp_core::Screen;
+    use pp_core::{PatternId, Screen};
 
     #[test]
     fn open_and_close_each_screen() {
@@ -106,6 +164,30 @@ mod tests {
         }
         // Navigation is not undoable.
         assert!(!e.session().history.can_undo());
+    }
+
+    #[test]
+    fn pattern_navigation() {
+        let mut e = Engine::new();
+        assert!(
+            e.enabled("pattern.next").is_err(),
+            "only on the pattern screen"
+        );
+        e.run("test.pattern", Value::Null).unwrap();
+        assert_eq!(e.doc().pattern, PatternId::SmpteBars);
+        e.run("pattern.next", Value::Null).unwrap();
+        assert_eq!(e.doc().pattern, PatternId::White);
+        e.run("pattern.prev", Value::Null).unwrap();
+        e.run("pattern.prev", Value::Null).unwrap();
+        assert_eq!(e.doc().pattern, PatternId::CheckerCoarse);
+        e.run("pattern.set", serde_json::json!({"pattern": "grid"}))
+            .unwrap();
+        assert_eq!(e.doc().pattern, PatternId::Grid);
+        assert!(
+            e.run("pattern.set", serde_json::json!({"pattern": "nope"}))
+                .is_err()
+        );
+        assert_eq!(e.doc().pattern, PatternId::Grid);
     }
 
     #[test]

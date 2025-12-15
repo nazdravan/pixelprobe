@@ -1,6 +1,7 @@
 use pp_control::ControlServer;
 use pp_ui::egui;
 use pp_ui::pp_engine::Engine;
+use pp_ui::pp_engine::pp_core::Screen;
 use std::process::ExitCode;
 
 /// Parsed command line.
@@ -59,6 +60,7 @@ pub fn main() -> ExitCode {
                 engine: Engine::new(),
                 control,
                 status: None,
+                last_screen: Screen::Main,
             }))
         }),
     );
@@ -76,6 +78,24 @@ struct App {
     control: Option<ControlServer>,
     /// Last command error or caught UI panic, shown in a status line.
     status: Option<String>,
+    /// Screen shown last frame, to react to screen changes (full screen on/off).
+    last_screen: Screen,
+}
+
+impl App {
+    /// The pattern test runs full screen; leaving it restores the window.
+    fn sync_viewport(&mut self, ctx: &egui::Context) {
+        let screen = self.engine.doc().screen;
+        if screen == self.last_screen {
+            return;
+        }
+        if screen == Screen::PatternTest {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(true));
+        } else if self.last_screen == Screen::PatternTest {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(false));
+        }
+        self.last_screen = screen;
+    }
 }
 
 impl eframe::App for App {
@@ -88,12 +108,14 @@ impl eframe::App for App {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        if let Some(msg) = &self.status {
+        self.sync_viewport(ui.ctx());
+        let full_screen = self.engine.doc().screen == Screen::PatternTest;
+        if let Some(msg) = self.status.as_ref().filter(|_| !full_screen) {
             let mut dismiss = false;
             egui::Panel::top("status").show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.colored_label(ui.visuals().warn_fg_color, msg);
-                    dismiss = ui.small_button("✕").clicked();
+                    dismiss = ui.small_button("×").clicked();
                 });
             });
             if dismiss {
@@ -115,6 +137,7 @@ impl eframe::App for App {
             }
             Err(_) => self.status = Some("internal error while drawing; see the log".into()),
         }
+        self.sync_viewport(ui.ctx());
     }
 }
 

@@ -11,6 +11,7 @@ layer = 6
 [dependencies]
 pp-core.workspace = true
 pp-engine.workspace = true
+pp-patterns.workspace = true
 egui.workspace = true
 
 [dev-dependencies]

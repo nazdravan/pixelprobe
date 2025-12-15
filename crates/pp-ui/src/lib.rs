@@ -4,6 +4,7 @@
 //! them through `Engine::run`. Nothing here mutates the document.
 
 mod main_window;
+mod pattern_view;
 pub mod shortcuts;
 mod widgets;
 
@@ -36,7 +37,7 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine) -> Vec<Action> {
     match engine.doc().screen {
         Screen::Main => main_window::show(ui, engine, &mut actions),
         Screen::MotionTest => placeholder(ui, engine, "Motion Test", "G6", &mut actions),
-        Screen::PatternTest => placeholder(ui, engine, "Pattern Test", "G5", &mut actions),
+        Screen::PatternTest => pattern_view::show(ui, engine, &mut actions),
         Screen::PixelRefresh => placeholder(ui, engine, "Pixel Refresh", "G7", &mut actions),
         Screen::About => about(ui, engine, &mut actions),
     }
