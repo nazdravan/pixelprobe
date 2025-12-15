@@ -46,3 +46,38 @@ fn every_screen_renders_and_closes() {
         );
     }
 }
+
+/// Press `key` (with `modifiers`) on a fresh frame; return the triggered actions.
+fn press(screen_cmd: Option<&str>, modifiers: egui::Modifiers, key: egui::Key) -> Vec<Action> {
+    let mut engine = Engine::new();
+    if let Some(id) = screen_cmd {
+        engine.run(id, Value::Null).unwrap();
+    }
+    let mut harness = Harness::new_ui_state(
+        |ui, actions: &mut Vec<Action>| actions.extend(show(ui, &engine)),
+        Vec::new(),
+    );
+    harness.key_press_modifiers(modifiers, key);
+    harness.run();
+    harness.state().clone()
+}
+
+#[test]
+fn shortcuts_trigger_enabled_commands() {
+    let none = egui::Modifiers::NONE;
+    assert_eq!(
+        press(None, none, egui::Key::M),
+        vec![Action::new("test.motion")]
+    );
+    assert_eq!(
+        press(None, none, egui::Key::P),
+        vec![Action::new("test.pattern")]
+    );
+    assert_eq!(
+        press(Some("test.motion"), none, egui::Key::Escape),
+        vec![Action::new("view.close")]
+    );
+    // Disabled: Escape on the main window, undo with empty history.
+    assert_eq!(press(None, none, egui::Key::Escape), vec![]);
+    assert_eq!(press(None, egui::Modifiers::COMMAND, egui::Key::Z), vec![]);
+}

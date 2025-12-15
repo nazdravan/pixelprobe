@@ -4,6 +4,7 @@
 //! them through `Engine::run`. Nothing here mutates the document.
 
 mod main_window;
+pub mod shortcuts;
 mod widgets;
 
 pub use egui;
@@ -31,7 +32,7 @@ impl Action {
 
 /// Draw the whole app for the current screen; returns what the user triggered.
 pub fn show(ui: &mut egui::Ui, engine: &Engine) -> Vec<Action> {
-    let mut actions = Vec::new();
+    let mut actions = shortcuts::actions(ui.ctx(), engine);
     match engine.doc().screen {
         Screen::Main => main_window::show(ui, engine, &mut actions),
         Screen::MotionTest => placeholder(ui, engine, "Motion Test", "G6", &mut actions),
