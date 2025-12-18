@@ -86,24 +86,32 @@ fn no_op_change_is_not_recorded() {
 
 #[test]
 fn undo_redo_round_trip() {
-    let mut e = engine();
+    let mut e = Engine::new();
     assert!(matches!(
         e.run("edit.undo", Value::Null),
         Err(EngineError::Disabled { .. })
     ));
+    e.run("refresh.speed", json!({"speed": 2})).unwrap();
+    e.run("refresh.speed", json!({"speed": 9})).unwrap();
+    e.run("edit.undo", Value::Null).unwrap();
+    assert_eq!(e.doc().refresh_speed.get(), 2);
+    e.run("edit.undo", Value::Null).unwrap();
+    assert_eq!(e.doc().refresh_speed.get(), 7);
+    e.run("edit.redo", Value::Null).unwrap();
+    assert_eq!(e.doc().refresh_speed.get(), 2);
+    // A new change clears redo.
+    e.run("refresh.speed", json!({"speed": 4})).unwrap();
+    assert!(e.enabled("edit.redo").is_err());
+}
+
+#[test]
+fn undo_keeps_the_current_screen() {
+    let mut e = engine();
     e.run("test.goto", json!({"screen": "motion_test"}))
         .unwrap();
     e.run("test.goto", json!({"screen": "about"})).unwrap();
     e.run("edit.undo", Value::Null).unwrap();
-    assert_eq!(e.doc().screen, Screen::MotionTest);
-    e.run("edit.undo", Value::Null).unwrap();
-    assert_eq!(e.doc().screen, Screen::Main);
-    e.run("edit.redo", Value::Null).unwrap();
-    assert_eq!(e.doc().screen, Screen::MotionTest);
-    // A new change clears redo.
-    e.run("test.goto", json!({"screen": "pixel_refresh"}))
-        .unwrap();
-    assert!(e.enabled("edit.redo").is_err());
+    assert_eq!(e.doc().screen, Screen::About);
 }
 
 #[test]

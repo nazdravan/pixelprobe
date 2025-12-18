@@ -119,6 +119,63 @@ impl PatternId {
     }
 }
 
+/// Pixel refresh speed: a slider position 1…10, mapped to a noise update rate.
+///
+/// Out-of-range values are rejected when deserialized, so a `RefreshSpeed` is always valid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(try_from = "u8", into = "u8")]
+pub struct RefreshSpeed(u8);
+
+impl RefreshSpeed {
+    pub const MIN: u8 = 1;
+    pub const MAX: u8 = 10;
+    /// Noise updates per second for each speed, slowest first. 60 /s matches the most common
+    /// display refresh rate; faster updates would only drop frames.
+    const RATES: [u32; 10] = [1, 2, 5, 10, 15, 20, 30, 40, 50, 60];
+
+    pub fn new(speed: u8) -> Result<Self, String> {
+        if (Self::MIN..=Self::MAX).contains(&speed) {
+            Ok(Self(speed))
+        } else {
+            Err(format!(
+                "speed must be {}…{}, got {speed}",
+                Self::MIN,
+                Self::MAX
+            ))
+        }
+    }
+
+    pub fn get(self) -> u8 {
+        self.0
+    }
+
+    /// Noise updates per second.
+    pub fn rate_hz(self) -> u32 {
+        let i = usize::from(self.0.saturating_sub(Self::MIN));
+        Self::RATES.get(i).copied().unwrap_or(1)
+    }
+}
+
+impl Default for RefreshSpeed {
+    /// 30 updates per second.
+    fn default() -> Self {
+        Self(7)
+    }
+}
+
+impl TryFrom<u8> for RefreshSpeed {
+    type Error = String;
+    fn try_from(v: u8) -> Result<Self, String> {
+        Self::new(v)
+    }
+}
+
+impl From<RefreshSpeed> for u8 {
+    fn from(s: RefreshSpeed) -> u8 {
+        s.0
+    }
+}
+
 /// The whole user-editable state of a test session ("the document").
 ///
 /// Small and `Clone`: the engine snapshots it for undo and for panic rollback.
@@ -127,6 +184,9 @@ pub struct Doc {
     pub screen: Screen,
     /// Pattern shown by the pattern test.
     pub pattern: PatternId,
+    /// Noise update speed of the pixel refresh.
+    #[serde(default)]
+    pub refresh_speed: RefreshSpeed,
 }
 
 #[cfg(test)]
@@ -152,6 +212,24 @@ mod tests {
             assert_eq!(p.next().prev(), p);
             assert!(!p.name().is_empty());
         }
+    }
+
+    #[test]
+    fn refresh_speed_range_and_rates() {
+        assert_eq!(RefreshSpeed::default().rate_hz(), 30);
+        assert!(RefreshSpeed::new(0).is_err());
+        assert!(RefreshSpeed::new(11).is_err());
+        let mut last = 0;
+        for v in RefreshSpeed::MIN..=RefreshSpeed::MAX {
+            let rate = RefreshSpeed::new(v).unwrap().rate_hz();
+            assert!(rate > last, "rates increase");
+            last = rate;
+        }
+        assert_eq!(last, 60);
+        let s: RefreshSpeed = serde_json::from_str("3").unwrap();
+        assert_eq!(s.get(), 3);
+        assert!(serde_json::from_str::<RefreshSpeed>("0").is_err());
+        assert!(serde_json::from_str::<RefreshSpeed>("300").is_err());
     }
 
     #[test]

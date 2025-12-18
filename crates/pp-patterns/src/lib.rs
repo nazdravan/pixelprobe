@@ -1,10 +1,13 @@
-//! L2: pure CPU generation of full-screen test patterns.
+//! L2: pure CPU generation of full-screen test patterns and pixel refresh noise.
 //!
 //! Patterns are rendered at the display's physical resolution so that pixel-level patterns
 //! (1-px checkerboard, grid lines) map 1:1 onto device pixels. Output is full-range 8-bit
 //! sRGB (what a PC display expects): a signal level of `p` % becomes `round(p × 255 / 100)`.
 
+mod noise;
 mod smpte;
+
+pub use noise::{NOISE_COLOURS, noise};
 
 pub use pp_core::{PatternId, Rgb8};
 

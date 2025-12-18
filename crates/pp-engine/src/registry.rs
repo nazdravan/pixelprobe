@@ -55,8 +55,11 @@ impl Registry {
                 }
             },
             run: |s, _| {
+                // Navigation is not history: stay on the screen the user is looking at.
                 let Session { doc, history } = s;
+                let screen = doc.screen;
                 history.undo(doc);
+                doc.screen = screen;
                 Ok(Value::Null)
             },
         });
@@ -75,8 +78,11 @@ impl Registry {
                 }
             },
             run: |s, _| {
+                // Navigation is not history: stay on the screen the user is looking at.
                 let Session { doc, history } = s;
+                let screen = doc.screen;
                 history.redo(doc);
+                doc.screen = screen;
                 Ok(Value::Null)
             },
         });

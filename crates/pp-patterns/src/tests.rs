@@ -148,3 +148,47 @@ proptest! {
         let _ = render(PatternId::SmpteBars, w, h);
     }
 }
+
+#[test]
+fn noise_uses_only_the_five_colours_evenly() {
+    let img = noise(100, 100, 42).unwrap();
+    let mut counts = [0u32; 5];
+    for y in 0..100 {
+        for x in 0..100 {
+            let c = px(&img, x, y);
+            let i = NOISE_COLOURS.iter().position(|n| *n == c).unwrap();
+            counts[i] += 1;
+        }
+    }
+    // 10 000 cells, 2 000 expected per colour.
+    for n in counts {
+        assert!((1700..2300).contains(&n), "{counts:?}");
+    }
+}
+
+#[test]
+fn noise_is_deterministic_and_changes_per_frame() {
+    assert_eq!(noise(40, 30, 7).unwrap(), noise(40, 30, 7).unwrap());
+    let (a, b) = (noise(40, 30, 7).unwrap(), noise(40, 30, 8).unwrap());
+    let changed = (0..30)
+        .flat_map(|y| (0..40).map(move |x| (x, y)))
+        .filter(|&(x, y)| px(&a, x, y) != px(&b, x, y))
+        .count();
+    // A cell keeps its colour with probability 1/5: ~960 of 1200 change.
+    assert!(changed > 800, "{changed}");
+    assert!(noise(0, 10, 1).is_err());
+    assert!(noise(MAX_SIDE + 1, 1, 1).is_err());
+}
+
+proptest! {
+    #[test]
+    fn noise_any_size_and_seed(cols in 0u32..300, rows in 0u32..300, seed: u64) {
+        match noise(cols, rows, seed) {
+            Ok(img) => {
+                prop_assert!(cols > 0 && rows > 0);
+                prop_assert_eq!(img.rgba.len(), cols as usize * rows as usize * 4);
+            }
+            Err(_) => prop_assert!(cols == 0 || rows == 0),
+        }
+    }
+}

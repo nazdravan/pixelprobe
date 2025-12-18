@@ -1,7 +1,7 @@
 //! Full-screen pattern test: the pattern at physical resolution plus a small toolbar.
 
 use crate::Action;
-use crate::widgets::command_icon;
+use crate::widgets::{command_icon, opened_at};
 use pp_engine::Engine;
 use pp_engine::pp_core::PatternId;
 use pp_patterns::render;
@@ -33,15 +33,8 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
 /// whenever the pointer hovers the top edge.
 fn toolbar_visible(ui: &egui::Ui) -> bool {
     let ctx = ui.ctx();
-    let id = egui::Id::unique("pp-pattern-opened");
-    let (now, pass) = (ui.input(|i| i.time), ctx.cumulative_pass_nr());
-    // (time opened, last pass drawn): a gap in passes means the screen was just opened.
-    let opened = match ctx.data(|d| d.get_temp::<(f64, u64)>(id)) {
-        Some((t, last)) if last + 1 >= pass => t,
-        _ => now,
-    };
-    ctx.data_mut(|d| d.insert_temp(id, (opened, pass)));
-
+    let now = ui.input(|i| i.time);
+    let opened = opened_at(ui, "pp-pattern-opened");
     let since_open = (now - opened) as f32;
     let idle = ui.input(|i| i.pointer.time_since_last_movement());
     let recent = since_open.min(if idle.is_finite() { idle } else { f32::MAX });

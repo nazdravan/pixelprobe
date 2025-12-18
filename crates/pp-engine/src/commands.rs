@@ -2,7 +2,7 @@
 
 use crate::registry::always_enabled;
 use crate::{CommandSpec, Registry, Session, Value};
-use pp_core::{PatternId, Screen};
+use pp_core::{PatternId, RefreshSpeed, Screen};
 
 /// Register every app command on top of the built-ins.
 pub fn register_app(r: &mut Registry) {
@@ -52,6 +52,7 @@ pub fn register_app(r: &mut Registry) {
         },
     });
     register_patterns(r);
+    register_refresh(r);
 }
 
 fn on_pattern_screen(s: &Session) -> Result<(), String> {
@@ -108,6 +109,79 @@ fn register_patterns(r: &mut Registry) {
             s.doc.pattern = p.pattern;
             Ok(Value::Null)
         },
+    });
+}
+
+fn on_refresh_screen(s: &Session) -> Result<(), String> {
+    if s.doc.screen == Screen::PixelRefresh {
+        Ok(())
+    } else {
+        Err("the pixel refresh is not open".into())
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SetSpeed {
+    speed: RefreshSpeed,
+}
+
+/// Move the refresh speed by `step`, failing at either end of the range.
+fn step_speed(s: &mut Session, id: &str, step: i8) -> Result<Value, crate::EngineError> {
+    let next = s.doc.refresh_speed.get().saturating_add_signed(step);
+    s.doc.refresh_speed = RefreshSpeed::new(next).map_err(|msg| crate::EngineError::Failed {
+        id: id.to_owned(),
+        msg,
+    })?;
+    Ok(Value::Null)
+}
+
+fn register_refresh(r: &mut Registry) {
+    r.register(CommandSpec {
+        id: "refresh.speed",
+        label: "Set refresh speed",
+        menu: "Pixel Refresh/Speed...",
+        shortcut: None,
+        params: "{ speed: 1..=10 }",
+        undoable: true,
+        enabled: always_enabled,
+        run: |s, p| {
+            let p: SetSpeed = crate::params("refresh.speed", p)?;
+            s.doc.refresh_speed = p.speed;
+            Ok(Value::Null)
+        },
+    });
+    r.register(CommandSpec {
+        id: "refresh.faster",
+        label: "Faster",
+        menu: "Pixel Refresh/Faster",
+        shortcut: Some("Up"),
+        params: "",
+        undoable: true,
+        enabled: |s| {
+            on_refresh_screen(s)?;
+            if s.doc.refresh_speed.get() >= RefreshSpeed::MAX {
+                return Err("already at the fastest speed".into());
+            }
+            Ok(())
+        },
+        run: |s, _| step_speed(s, "refresh.faster", 1),
+    });
+    r.register(CommandSpec {
+        id: "refresh.slower",
+        label: "Slower",
+        menu: "Pixel Refresh/Slower",
+        shortcut: Some("Down"),
+        params: "",
+        undoable: true,
+        enabled: |s| {
+            on_refresh_screen(s)?;
+            if s.doc.refresh_speed.get() <= RefreshSpeed::MIN {
+                return Err("already at the slowest speed".into());
+            }
+            Ok(())
+        },
+        run: |s, _| step_speed(s, "refresh.slower", -1),
     });
 }
 
@@ -188,6 +262,45 @@ mod tests {
                 .is_err()
         );
         assert_eq!(e.doc().pattern, PatternId::Grid);
+    }
+
+    #[test]
+    fn refresh_speed_commands_and_undo() {
+        let mut e = Engine::new();
+        assert!(e.enabled("refresh.faster").is_err(), "only on its screen");
+        e.run("test.pixel_refresh", Value::Null).unwrap();
+        assert_eq!(e.doc().refresh_speed.get(), 7);
+        e.run("refresh.faster", Value::Null).unwrap();
+        assert_eq!(e.doc().refresh_speed.get(), 8);
+        e.run("refresh.speed", serde_json::json!({"speed": 10}))
+            .unwrap();
+        assert!(e.enabled("refresh.faster").is_err(), "at the top");
+        for bad in [
+            serde_json::json!({"speed": 0}),
+            serde_json::json!({"speed": 11}),
+            serde_json::json!({"speed": "fast"}),
+            serde_json::json!({"speed": 5, "x": 1}),
+            Value::Null,
+        ] {
+            assert!(e.run("refresh.speed", bad.clone()).is_err(), "{bad}");
+        }
+        assert_eq!(e.doc().refresh_speed.get(), 10);
+        e.run("refresh.speed", serde_json::json!({"speed": 1}))
+            .unwrap();
+        assert!(e.enabled("refresh.slower").is_err(), "at the bottom");
+
+        // Undo walks back 1 → 10 → 8 → 7 and never leaves the current screen.
+        e.run("view.close", Value::Null).unwrap();
+        e.run("edit.undo", Value::Null).unwrap();
+        assert_eq!(e.doc().refresh_speed.get(), 10);
+        assert_eq!(e.doc().screen, Screen::Main);
+        e.run("edit.undo", Value::Null).unwrap();
+        e.run("edit.undo", Value::Null).unwrap();
+        assert_eq!(e.doc().refresh_speed.get(), 7);
+        assert!(e.enabled("edit.undo").is_err());
+        e.run("edit.redo", Value::Null).unwrap();
+        assert_eq!(e.doc().refresh_speed.get(), 8);
+        assert_eq!(e.doc().screen, Screen::Main);
     }
 
     #[test]

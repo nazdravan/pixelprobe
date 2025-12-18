@@ -116,3 +116,56 @@ fn pattern_toolbar_buttons() {
         assert_eq!(harness.state(), &vec![Action::new(id)], "{label}");
     }
 }
+
+#[test]
+fn pixel_refresh_screen() {
+    let none = egui::Modifiers::NONE;
+    assert_eq!(
+        press(Some("test.pixel_refresh"), none, egui::Key::ArrowUp),
+        vec![Action::new("refresh.faster")]
+    );
+    assert_eq!(
+        press(Some("test.pixel_refresh"), none, egui::Key::ArrowDown),
+        vec![Action::new("refresh.slower")]
+    );
+    assert_eq!(press(None, none, egui::Key::ArrowUp), vec![]);
+
+    let mut engine = Engine::new();
+    engine.run("test.pixel_refresh", Value::Null).unwrap();
+    engine
+        .run("refresh.speed", pp_engine::json!({"speed": 3}))
+        .unwrap();
+    let mut harness = Harness::new_ui_state(
+        |ui, actions: &mut Vec<Action>| actions.extend(show(ui, &engine)),
+        Vec::new(),
+    );
+    harness.run();
+    harness.get_by_label("Update rate: 5 /s");
+    harness.get_by_label("Elapsed time: 00:00");
+    // Run frames as the animating app does, then check the layout.
+    for _ in 0..60 {
+        harness.step();
+    }
+    // Layout: noise on top, then the controls, then Close at the bottom.
+    let speed = harness.get_by_label("Speed:").rect();
+    let close = harness.get_by_label("Close").rect();
+    assert!(speed.min.y > 100.0, "noise above the controls: {speed:?}");
+    assert!(
+        close.min.y > speed.max.y,
+        "Close below the controls: {close:?}"
+    );
+    assert!(harness.state().is_empty());
+}
+
+#[test]
+fn refresh_clock_format() {
+    use crate::pixel_refresh::clock;
+    assert_eq!(clock(0.0), "00:00");
+    assert_eq!(clock(4.9), "00:04");
+    assert_eq!(clock(61.0), "01:01");
+    assert_eq!(clock(3599.0), "59:59");
+    assert_eq!(clock(3600.0), "1:00:00");
+    assert_eq!(clock(-5.0), "00:00");
+    assert_eq!(clock(f64::NAN), "00:00");
+    assert_eq!(clock(f64::INFINITY), "00:00");
+}

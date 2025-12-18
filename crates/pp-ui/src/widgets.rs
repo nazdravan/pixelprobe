@@ -51,3 +51,18 @@ pub fn command_icon(
     }
     resp
 }
+
+/// When the screen drawn under `key` was opened, in `ui.input(|i| i.time)` seconds.
+///
+/// A gap in drawn passes means the screen was off and has just been opened again.
+pub fn opened_at(ui: &egui::Ui, key: &str) -> f64 {
+    let ctx = ui.ctx();
+    let id = egui::Id::unique(key);
+    let (now, pass) = (ui.input(|i| i.time), ctx.cumulative_pass_nr());
+    let opened = match ctx.data(|d| d.get_temp::<(f64, u64)>(id)) {
+        Some((t, last)) if last + 1 >= pass => t,
+        _ => now,
+    };
+    ctx.data_mut(|d| d.insert_temp(id, (opened, pass)));
+    opened
+}

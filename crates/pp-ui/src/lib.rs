@@ -5,6 +5,7 @@
 
 mod main_window;
 mod pattern_view;
+pub(crate) mod pixel_refresh;
 pub mod shortcuts;
 mod widgets;
 
@@ -38,7 +39,7 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine) -> Vec<Action> {
         Screen::Main => main_window::show(ui, engine, &mut actions),
         Screen::MotionTest => placeholder(ui, engine, "Motion Test", "G6", &mut actions),
         Screen::PatternTest => pattern_view::show(ui, engine, &mut actions),
-        Screen::PixelRefresh => placeholder(ui, engine, "Pixel Refresh", "G7", &mut actions),
+        Screen::PixelRefresh => pixel_refresh::show(ui, engine, &mut actions),
         Screen::About => about(ui, engine, &mut actions),
     }
     actions
