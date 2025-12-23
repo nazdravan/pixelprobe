@@ -2,7 +2,7 @@
 
 use crate::registry::always_enabled;
 use crate::{CommandSpec, Registry, Session, Value};
-use pp_core::{PatternId, RefreshSpeed, Screen};
+use pp_core::{MotionSpeed, MoveStep, PatternId, RefreshSpeed, Rgb8, Screen, Shape, ShapeSize};
 
 /// Register every app command on top of the built-ins.
 pub fn register_app(r: &mut Registry) {
@@ -53,6 +53,7 @@ pub fn register_app(r: &mut Registry) {
     });
     register_patterns(r);
     register_refresh(r);
+    register_motion(r);
 }
 
 fn on_pattern_screen(s: &Session) -> Result<(), String> {
@@ -185,6 +186,120 @@ fn register_refresh(r: &mut Registry) {
     });
 }
 
+fn on_motion_screen(s: &Session) -> Result<(), String> {
+    if s.doc.screen == Screen::MotionTest {
+        Ok(())
+    } else {
+        Err("the motion test is not open".into())
+    }
+}
+
+/// Any subset of the motion options; absent fields stay as they are.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct MotionPatch {
+    speed: Option<MotionSpeed>,
+    shape: Option<Shape>,
+    hollow: Option<bool>,
+    size: Option<ShapeSize>,
+    shape_color: Option<Rgb8>,
+    background: Option<Rgb8>,
+    step: Option<MoveStep>,
+}
+
+fn step_motion(s: &mut Session, id: &str, step: i8) -> Result<Value, crate::EngineError> {
+    let next = s.doc.motion.speed.get().saturating_add_signed(step);
+    s.doc.motion.speed = MotionSpeed::new(next).map_err(|msg| crate::EngineError::Failed {
+        id: id.to_owned(),
+        msg,
+    })?;
+    Ok(Value::Null)
+}
+
+fn register_motion(r: &mut Registry) {
+    r.register(CommandSpec {
+        id: "motion.set",
+        label: "Set motion options",
+        menu: "Motion/Options...",
+        shortcut: None,
+        params: "{ speed?: 1..=12, shape?: \"square\" | \"circle\", hollow?: bool, size?: \"small\" | \"medium\" | \"large\", shape_color?: {r,g,b}, background?: {r,g,b}, step?: \"pixel_by_pixel\" | \"shape_by_shape\" }",
+        undoable: true,
+        enabled: always_enabled,
+        run: |s, p| {
+            let p: MotionPatch = crate::params("motion.set", p)?;
+            let m = &mut s.doc.motion;
+            if let Some(v) = p.speed {
+                m.speed = v;
+            }
+            if let Some(v) = p.shape {
+                m.shape = v;
+            }
+            if let Some(v) = p.hollow {
+                m.hollow = v;
+            }
+            if let Some(v) = p.size {
+                m.size = v;
+            }
+            if let Some(v) = p.shape_color {
+                m.shape_color = v;
+            }
+            if let Some(v) = p.background {
+                m.background = v;
+            }
+            if let Some(v) = p.step {
+                m.step = v;
+            }
+            Ok(Value::Null)
+        },
+    });
+    r.register(CommandSpec {
+        id: "motion.swap_colors",
+        label: "Swap colours",
+        menu: "Motion/Swap Colours",
+        shortcut: Some("S"),
+        params: "",
+        undoable: true,
+        enabled: on_motion_screen,
+        run: |s, _| {
+            let m = &mut s.doc.motion;
+            std::mem::swap(&mut m.shape_color, &mut m.background);
+            Ok(Value::Null)
+        },
+    });
+    r.register(CommandSpec {
+        id: "motion.faster",
+        label: "+",
+        menu: "Motion/Faster",
+        shortcut: Some("Up"),
+        params: "",
+        undoable: true,
+        enabled: |s| {
+            on_motion_screen(s)?;
+            if s.doc.motion.speed.get() >= MotionSpeed::MAX {
+                return Err("already at the fastest speed".into());
+            }
+            Ok(())
+        },
+        run: |s, _| step_motion(s, "motion.faster", 1),
+    });
+    r.register(CommandSpec {
+        id: "motion.slower",
+        label: "-",
+        menu: "Motion/Slower",
+        shortcut: Some("Down"),
+        params: "",
+        undoable: true,
+        enabled: |s| {
+            on_motion_screen(s)?;
+            if s.doc.motion.speed.get() <= MotionSpeed::MIN {
+                return Err("already at the slowest speed".into());
+            }
+            Ok(())
+        },
+        run: |s, _| step_motion(s, "motion.slower", -1),
+    });
+}
+
 /// A command that brings `screen` to the front. Navigation is not undoable.
 fn open_screen(
     id: &'static str,
@@ -301,6 +416,55 @@ mod tests {
         e.run("edit.redo", Value::Null).unwrap();
         assert_eq!(e.doc().refresh_speed.get(), 8);
         assert_eq!(e.doc().screen, Screen::Main);
+    }
+
+    #[test]
+    fn motion_commands() {
+        use pp_core::{MoveStep, Rgb8, Shape, ShapeSize};
+        let mut e = Engine::new();
+        assert!(e.enabled("motion.faster").is_err(), "only on its screen");
+        e.run("test.motion", Value::Null).unwrap();
+        e.run(
+            "motion.set",
+            serde_json::json!({"shape": "circle", "hollow": true, "size": "large",
+                "step": "shape_by_shape", "shape_color": {"r": 255, "g": 0, "b": 0}}),
+        )
+        .unwrap();
+        let m = e.doc().motion;
+        assert_eq!(
+            (m.shape, m.hollow, m.size, m.step),
+            (
+                Shape::Circle,
+                true,
+                ShapeSize::Large,
+                MoveStep::ShapeByShape
+            )
+        );
+        assert_eq!(m.shape_color, Rgb8::new(255, 0, 0));
+        e.run("motion.swap_colors", Value::Null).unwrap();
+        assert_eq!(e.doc().motion.background, Rgb8::new(255, 0, 0));
+        assert_eq!(e.doc().motion.shape_color, Rgb8::BLACK);
+        e.run("motion.faster", Value::Null).unwrap();
+        assert_eq!(e.doc().motion.speed.rate_hz(), 48);
+        for bad in [
+            serde_json::json!({"speed": 0}),
+            serde_json::json!({"speed": 13}),
+            serde_json::json!({"shape": "triangle"}),
+            serde_json::json!({"shape_color": {"r": 256, "g": 0, "b": 0}}),
+            serde_json::json!({"bogus": 1}),
+            Value::Null,
+        ] {
+            assert!(e.run("motion.set", bad.clone()).is_err(), "{bad}");
+        }
+        e.run("motion.set", serde_json::json!({"speed": 12}))
+            .unwrap();
+        assert!(e.enabled("motion.faster").is_err());
+        // Undo everything: back to the defaults, still on the motion screen.
+        while e.enabled("edit.undo").is_ok() {
+            e.run("edit.undo", Value::Null).unwrap();
+        }
+        assert_eq!(e.doc().motion, pp_core::Motion::default());
+        assert_eq!(e.doc().screen, Screen::MotionTest);
     }
 
     #[test]

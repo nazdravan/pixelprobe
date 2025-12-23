@@ -176,6 +176,137 @@ impl From<RefreshSpeed> for u8 {
     }
 }
 
+/// Motion test speed: a slider position mapped to how many times per second the shape moves.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(try_from = "u8", into = "u8")]
+pub struct MotionSpeed(u8);
+
+impl MotionSpeed {
+    pub const MIN: u8 = 1;
+    pub const MAX: u8 = 12;
+    /// Updates per second, slowest first. Includes the common display refresh rates
+    /// (24, 30, 60, 75, 120, 144, 165, 240 Hz) so the update rate can match the display.
+    const RATES: [u32; 12] = [5, 10, 15, 24, 30, 48, 60, 75, 120, 144, 165, 240];
+
+    pub fn new(speed: u8) -> Result<Self, String> {
+        if (Self::MIN..=Self::MAX).contains(&speed) {
+            Ok(Self(speed))
+        } else {
+            Err(format!(
+                "speed must be {}…{}, got {speed}",
+                Self::MIN,
+                Self::MAX
+            ))
+        }
+    }
+
+    pub fn get(self) -> u8 {
+        self.0
+    }
+
+    /// Shape moves per second.
+    pub fn rate_hz(self) -> u32 {
+        let i = usize::from(self.0.saturating_sub(Self::MIN));
+        Self::RATES.get(i).copied().unwrap_or(30)
+    }
+}
+
+impl Default for MotionSpeed {
+    /// 30 updates per second.
+    fn default() -> Self {
+        Self(5)
+    }
+}
+
+impl TryFrom<u8> for MotionSpeed {
+    type Error = String;
+    fn try_from(v: u8) -> Result<Self, String> {
+        Self::new(v)
+    }
+}
+
+impl From<MotionSpeed> for u8 {
+    fn from(s: MotionSpeed) -> u8 {
+        s.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Shape {
+    #[default]
+    Square,
+    Circle,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ShapeSize {
+    Small,
+    #[default]
+    Medium,
+    Large,
+}
+
+impl ShapeSize {
+    /// Side (or diameter) in points.
+    pub fn points(self) -> f32 {
+        match self {
+            Self::Small => 64.0,
+            Self::Medium => 128.0,
+            Self::Large => 256.0,
+        }
+    }
+}
+
+/// How far the shape moves on each update.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MoveStep {
+    /// A small step (1/16 of the shape): looks like continuous motion, shows blur and ghosting.
+    #[default]
+    PixelByPixel,
+    /// A whole shape width: the shape jumps, shows how fast a pixel settles.
+    ShapeByShape,
+}
+
+/// Motion test options.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Motion {
+    pub speed: MotionSpeed,
+    pub shape: Shape,
+    pub hollow: bool,
+    pub size: ShapeSize,
+    pub shape_color: Rgb8,
+    pub background: Rgb8,
+    pub step: MoveStep,
+}
+
+impl Default for Motion {
+    fn default() -> Self {
+        Self {
+            speed: MotionSpeed::default(),
+            shape: Shape::default(),
+            hollow: false,
+            size: ShapeSize::default(),
+            shape_color: Rgb8::WHITE,
+            background: Rgb8::BLACK,
+            step: MoveStep::default(),
+        }
+    }
+}
+
+impl Motion {
+    /// Distance moved per update, in points.
+    pub fn step_points(&self) -> f32 {
+        match self.step {
+            MoveStep::PixelByPixel => self.size.points() / 16.0,
+            MoveStep::ShapeByShape => self.size.points(),
+        }
+    }
+}
+
 /// The whole user-editable state of a test session ("the document").
 ///
 /// Small and `Clone`: the engine snapshots it for undo and for panic rollback.
@@ -187,6 +318,9 @@ pub struct Doc {
     /// Noise update speed of the pixel refresh.
     #[serde(default)]
     pub refresh_speed: RefreshSpeed,
+    /// Motion test options.
+    #[serde(default)]
+    pub motion: Motion,
 }
 
 #[cfg(test)]
@@ -230,6 +364,28 @@ mod tests {
         assert_eq!(s.get(), 3);
         assert!(serde_json::from_str::<RefreshSpeed>("0").is_err());
         assert!(serde_json::from_str::<RefreshSpeed>("300").is_err());
+    }
+
+    #[test]
+    fn motion_speed_and_steps() {
+        assert_eq!(MotionSpeed::default().rate_hz(), 30);
+        assert!(MotionSpeed::new(0).is_err() && MotionSpeed::new(13).is_err());
+        let rates: Vec<u32> = (MotionSpeed::MIN..=MotionSpeed::MAX)
+            .map(|v| MotionSpeed::new(v).unwrap().rate_hz())
+            .collect();
+        assert!(rates.windows(2).all(|w| w[0] < w[1]), "{rates:?}");
+        for hz in [24, 30, 60, 120, 144, 240] {
+            assert!(rates.contains(&hz), "{hz}");
+        }
+        let mut m = Motion::default();
+        assert_eq!(m.step_points(), 8.0);
+        m.step = MoveStep::ShapeByShape;
+        m.size = ShapeSize::Large;
+        assert_eq!(m.step_points(), 256.0);
+        // Partial JSON fills the rest from the defaults.
+        let m: Motion = serde_json::from_str(r#"{"shape":"circle"}"#).unwrap();
+        assert_eq!(m.shape, Shape::Circle);
+        assert_eq!(m.shape_color, Rgb8::WHITE);
     }
 
     #[test]

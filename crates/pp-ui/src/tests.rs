@@ -12,8 +12,10 @@ fn click(screen_cmd: Option<&str>, label: &str) -> Vec<Action> {
         |ui, actions: &mut Vec<Action>| actions.extend(show(ui, &engine)),
         Vec::new(),
     );
+    // A fixed number of frames: animated screens repaint forever and never settle.
+    harness.run_steps(2);
     harness.get_by_label(label).click();
-    harness.run();
+    harness.run_steps(4);
     harness.state().clone()
 }
 
@@ -53,7 +55,7 @@ fn press(screen_cmd: Option<&str>, modifiers: egui::Modifiers, key: egui::Key) -
         Vec::new(),
     );
     harness.key_press_modifiers(modifiers, key);
-    harness.run();
+    harness.run_steps(4);
     harness.state().clone()
 }
 
@@ -168,4 +170,54 @@ fn refresh_clock_format() {
     assert_eq!(clock(-5.0), "00:00");
     assert_eq!(clock(f64::NAN), "00:00");
     assert_eq!(clock(f64::INFINITY), "00:00");
+}
+
+#[test]
+fn motion_screen_controls() {
+    let m = Some("test.motion");
+    assert_eq!(
+        click(m, "Circle"),
+        vec![Action {
+            id: "motion.set",
+            params: pp_engine::json!({"shape": "circle"})
+        }]
+    );
+    assert_eq!(
+        click(m, "Large"),
+        vec![Action {
+            id: "motion.set",
+            params: pp_engine::json!({"size": "large"})
+        }]
+    );
+    assert_eq!(
+        click(m, "Shape by shape"),
+        vec![Action {
+            id: "motion.set",
+            params: pp_engine::json!({"step": "shape_by_shape"})
+        }]
+    );
+    assert_eq!(
+        click(m, "Hollow"),
+        vec![Action {
+            id: "motion.set",
+            params: pp_engine::json!({"hollow": true})
+        }]
+    );
+    // Already selected: no command.
+    assert_eq!(click(m, "Square"), vec![]);
+    assert_eq!(click(m, "+"), vec![Action::new("motion.faster")]);
+    assert_eq!(click(m, "-"), vec![Action::new("motion.slower")]);
+    assert_eq!(
+        click(m, "Swap colours"),
+        vec![Action::new("motion.swap_colors")]
+    );
+    let none = egui::Modifiers::NONE;
+    assert_eq!(
+        press(m, none, egui::Key::ArrowUp),
+        vec![Action::new("motion.faster")]
+    );
+    assert_eq!(
+        press(m, none, egui::Key::S),
+        vec![Action::new("motion.swap_colors")]
+    );
 }

@@ -4,6 +4,7 @@
 //! them through `Engine::run`. Nothing here mutates the document.
 
 mod main_window;
+mod motion_view;
 mod pattern_view;
 pub(crate) mod pixel_refresh;
 pub mod shortcuts;
@@ -37,29 +38,12 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine) -> Vec<Action> {
     let mut actions = shortcuts::actions(ui.ctx(), engine);
     match engine.doc().screen {
         Screen::Main => main_window::show(ui, engine, &mut actions),
-        Screen::MotionTest => placeholder(ui, engine, "Motion Test", "G6", &mut actions),
+        Screen::MotionTest => motion_view::show(ui, engine, &mut actions),
         Screen::PatternTest => pattern_view::show(ui, engine, &mut actions),
         Screen::PixelRefresh => pixel_refresh::show(ui, engine, &mut actions),
         Screen::About => about(ui, engine, &mut actions),
     }
     actions
-}
-
-/// Screens whose feature has not landed yet: say so plainly and offer the way back.
-fn placeholder(
-    ui: &mut egui::Ui,
-    engine: &Engine,
-    title: &str,
-    gap: &str,
-    actions: &mut Vec<Action>,
-) {
-    egui::CentralPanel::default().show(ui, |ui| {
-        ui.heading(title);
-        ui.add_space(8.0);
-        ui.label(format!("This test is not implemented yet ({gap})."));
-        ui.add_space(8.0);
-        command_button(ui, engine, "view.close", actions);
-    });
 }
 
 fn about(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {

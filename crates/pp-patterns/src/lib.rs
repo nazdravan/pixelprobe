@@ -4,9 +4,11 @@
 //! (1-px checkerboard, grid lines) map 1:1 onto device pixels. Output is full-range 8-bit
 //! sRGB (what a PC display expects): a signal level of `p` % becomes `round(p × 255 / 100)`.
 
+mod motion;
 mod noise;
 mod smpte;
 
+pub use motion::motion_x;
 pub use noise::{NOISE_COLOURS, noise};
 
 pub use pp_core::{PatternId, Rgb8};
