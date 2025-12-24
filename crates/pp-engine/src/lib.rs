@@ -11,7 +11,7 @@ mod registry;
 
 pub use error::EngineError;
 pub use history::History;
-pub use pp_core::{self, Doc};
+pub use pp_core::{self, DisplayInfo, Doc};
 pub use registry::{CommandSpec, Registry, always_enabled};
 pub use serde_json::{Value, json};
 
@@ -22,6 +22,10 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 pub struct Session {
     pub doc: Doc,
     pub history: History,
+    /// Displays as last reported by the platform (facts, not part of the document).
+    pub displays: Vec<DisplayInfo>,
+    /// Bumped by `display.refresh`; the app re-reads the displays when it changes.
+    pub display_refreshes: u64,
 }
 
 /// Owns the session and the command registry.
@@ -59,6 +63,29 @@ impl Engine {
 
     pub fn registry(&self) -> &Registry {
         &self.registry
+    }
+
+    /// Replace the display list with what the platform reports now. Not a command: these are
+    /// facts about the machine, not a user change. Input is sanitized and bounded.
+    pub fn set_displays(&mut self, displays: Vec<DisplayInfo>) {
+        self.session.displays = displays
+            .into_iter()
+            .take(pp_core::display::MAX_DISPLAYS)
+            .map(DisplayInfo::sanitized)
+            .collect();
+        let n = self.session.displays.len();
+        if self.session.doc.monitor >= n {
+            self.session.doc.monitor = 0;
+        }
+    }
+
+    pub fn displays(&self) -> &[DisplayInfo] {
+        &self.session.displays
+    }
+
+    /// The display selected in the monitor list, if any.
+    pub fn selected_display(&self) -> Option<&DisplayInfo> {
+        self.session.displays.get(self.session.doc.monitor)
     }
 
     /// Whether `id` can run now; `Err(reason)` explains why not.

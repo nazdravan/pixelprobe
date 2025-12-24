@@ -54,6 +54,7 @@ pub fn register_app(r: &mut Registry) {
     register_patterns(r);
     register_refresh(r);
     register_motion(r);
+    register_display(r);
 }
 
 fn on_pattern_screen(s: &Session) -> Result<(), String> {
@@ -300,6 +301,60 @@ fn register_motion(r: &mut Registry) {
     });
 }
 
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SelectDisplay {
+    index: usize,
+}
+
+fn register_display(r: &mut Registry) {
+    r.register(CommandSpec {
+        id: "display.refresh",
+        label: "Refresh",
+        menu: "Display/Refresh",
+        shortcut: Some("F5"),
+        params: "",
+        undoable: false,
+        enabled: |s| {
+            if s.doc.screen == Screen::Main {
+                Ok(())
+            } else {
+                Err("the monitor list is on the main window".into())
+            }
+        },
+        run: |s, _| {
+            s.display_refreshes = s.display_refreshes.wrapping_add(1);
+            Ok(Value::Null)
+        },
+    });
+    r.register(CommandSpec {
+        id: "display.select",
+        label: "Select monitor",
+        menu: "Display/Select...",
+        shortcut: None,
+        params: "{ index: number } (0-based, in the monitor list)",
+        undoable: false,
+        enabled: |s| {
+            if s.displays.is_empty() {
+                Err("no displays detected".into())
+            } else {
+                Ok(())
+            }
+        },
+        run: |s, p| {
+            let p: SelectDisplay = crate::params("display.select", p)?;
+            if p.index >= s.displays.len() {
+                return Err(crate::EngineError::Failed {
+                    id: "display.select".into(),
+                    msg: format!("no display {} (there are {})", p.index, s.displays.len()),
+                });
+            }
+            s.doc.monitor = p.index;
+            Ok(Value::Null)
+        },
+    });
+}
+
 /// A command that brings `screen` to the front. Navigation is not undoable.
 fn open_screen(
     id: &'static str,
@@ -465,6 +520,43 @@ mod tests {
         }
         assert_eq!(e.doc().motion, pp_core::Motion::default());
         assert_eq!(e.doc().screen, Screen::MotionTest);
+    }
+
+    #[test]
+    fn display_list_and_selection() {
+        use pp_core::DisplayInfo;
+        let mut e = Engine::new();
+        assert!(e.enabled("display.select").is_err(), "no displays yet");
+        let named = |n: &str| DisplayInfo {
+            name: n.into(),
+            width: 1920,
+            height: 1080,
+            ..Default::default()
+        };
+        e.set_displays(vec![named("A"), named("B")]);
+        e.run("display.select", serde_json::json!({"index": 1}))
+            .unwrap();
+        assert_eq!(e.selected_display().unwrap().name, "B");
+        assert!(
+            e.run("display.select", serde_json::json!({"index": 2}))
+                .is_err()
+        );
+        assert!(
+            e.run("display.select", serde_json::json!({"index": -1}))
+                .is_err()
+        );
+        // A display unplugged: the selection falls back to the first.
+        e.set_displays(vec![named("A")]);
+        assert_eq!(e.doc().monitor, 0);
+        // Bounded input.
+        e.set_displays(vec![named("X"); 100]);
+        assert_eq!(e.displays().len(), pp_core::display::MAX_DISPLAYS);
+
+        let before = e.session().display_refreshes;
+        e.run("display.refresh", Value::Null).unwrap();
+        assert_eq!(e.session().display_refreshes, before + 1);
+        e.run("test.motion", Value::Null).unwrap();
+        assert!(e.enabled("display.refresh").is_err());
     }
 
     #[test]

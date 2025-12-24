@@ -2,6 +2,9 @@
 
 use serde::{Deserialize, Serialize};
 
+pub mod display;
+pub use display::{DisplayInfo, DisplayMode};
+
 /// An sRGB colour with 8 bits per channel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Rgb8 {
@@ -321,6 +324,9 @@ pub struct Doc {
     /// Motion test options.
     #[serde(default)]
     pub motion: Motion,
+    /// Index of the display selected in the monitor list.
+    #[serde(default)]
+    pub monitor: usize,
 }
 
 #[cfg(test)]

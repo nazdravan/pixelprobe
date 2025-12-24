@@ -61,6 +61,7 @@ pub fn main() -> ExitCode {
                 control,
                 status: None,
                 last_screen: Screen::Main,
+                displays_read: None,
             }))
         }),
     );
@@ -85,7 +86,12 @@ struct App {
     status: Option<String>,
     /// Screen shown last frame, to react to screen changes (full screen on/off).
     last_screen: Screen,
+    /// When the displays were last read and the `display.refresh` count seen then.
+    displays_read: Option<(f64, u64)>,
 }
+
+/// Re-read the displays this often, in seconds, to follow plugging and window moves.
+const DISPLAY_POLL_SECS: f64 = 3.0;
 
 impl App {
     /// The pattern and motion tests run full screen; leaving them restores the window.
@@ -102,6 +108,29 @@ impl App {
     }
 }
 
+impl App {
+    /// Read the displays at start, on `display.refresh`, and every few seconds.
+    fn read_displays(&mut self, ctx: &egui::Context, frame: &eframe::Frame) {
+        let Some(window) = frame.winit_window() else {
+            return;
+        };
+        let now = ctx.input(|i| i.time);
+        let refreshes = self.engine.session().display_refreshes;
+        let due = match self.displays_read {
+            None => true,
+            Some((at, seen)) => seen != refreshes || now - at >= DISPLAY_POLL_SECS,
+        };
+        if due {
+            let displays = crate::displays::list(window);
+            if displays != self.engine.displays() {
+                self.engine.set_displays(displays);
+            }
+            self.displays_read = Some((now, refreshes));
+        }
+        ctx.request_repaint_after_secs(DISPLAY_POLL_SECS as f32);
+    }
+}
+
 impl eframe::App for App {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if let Some(server) = &self.control {
@@ -111,7 +140,8 @@ impl eframe::App for App {
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        self.read_displays(ui.ctx(), frame);
         self.sync_viewport(ui.ctx());
         let hide_status = self.engine.doc().screen == Screen::PatternTest;
         if let Some(msg) = self.status.as_ref().filter(|_| !hide_status) {

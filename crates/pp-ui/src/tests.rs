@@ -221,3 +221,52 @@ fn motion_screen_controls() {
         vec![Action::new("motion.swap_colors")]
     );
 }
+
+#[test]
+fn monitor_list_and_properties() {
+    use pp_engine::pp_core::DisplayInfo;
+    let mut engine = Engine::new();
+    engine.set_displays(vec![
+        DisplayInfo {
+            name: "Left".into(),
+            primary: true,
+            width: 2560,
+            height: 1440,
+            scale: 1.0,
+            // Every property row filled, so the font check covers all their glyphs.
+            width_mm: 597.0,
+            height_mm: 336.0,
+            bits: 32,
+            refresh_mhz: 60_000,
+            ..Default::default()
+        },
+        DisplayInfo {
+            name: "Right".into(),
+            width: 1920,
+            height: 1080,
+            scale: 1.0,
+            refresh_mhz: 144_000,
+            ..Default::default()
+        },
+    ]);
+    let mut harness = Harness::new_ui_state(
+        |ui, actions: &mut Vec<Action>| actions.extend(show(ui, &engine)),
+        Vec::new(),
+    );
+    harness.run();
+    // Properties of the selected (first) display.
+    harness.get_by_label("2560 × 1440 px");
+    harness.get_by_label("Right  —  1920 × 1080").click();
+    harness.get_by_label("Refresh").click();
+    harness.run();
+    assert_eq!(
+        harness.state(),
+        &vec![
+            Action {
+                id: "display.select",
+                params: pp_engine::json!({"index": 1})
+            },
+            Action::new("display.refresh"),
+        ]
+    );
+}

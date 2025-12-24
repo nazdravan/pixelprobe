@@ -3,6 +3,7 @@
 //! Panels only *read* the engine and return the [`Action`]s the user asked for; the app runs
 //! them through `Engine::run`. Nothing here mutates the document.
 
+pub mod display_props;
 mod main_window;
 mod motion_view;
 mod pattern_view;

@@ -107,9 +107,10 @@ fn speed_group(
     });
 }
 
-/// The display refresh rate, once display information is available (G8).
-fn refresh_text(_engine: &Engine) -> String {
-    "—".to_owned()
+/// The refresh rate of the display showing the window (else the selected one).
+fn refresh_text(engine: &Engine) -> String {
+    let shown = engine.displays().iter().find(|d| d.has_window);
+    crate::display_props::refresh_text(shown.or_else(|| engine.selected_display()))
 }
 
 /// A small `-`/`+` button for a command; its label comes from the spec.

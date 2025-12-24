@@ -4,6 +4,8 @@
 //! opened on `127.0.0.1:PORT` (see the `pp-control` crate).
 
 #[cfg(not(target_arch = "wasm32"))]
+mod displays;
+#[cfg(not(target_arch = "wasm32"))]
 mod native;
 
 #[cfg(not(target_arch = "wasm32"))]

@@ -30,8 +30,11 @@ pub fn handle(engine: &mut Engine, ctx: &egui::Context, pending: Pending) {
             pending.reply(Ok(Value::Array(list)));
         }
         "app.state" => {
-            let state = serde_json::to_value(engine.doc()).map_err(|e| e.to_string());
-            pending.reply(state);
+            pending.reply(state(engine));
+        }
+        "app.displays" => {
+            let displays = serde_json::to_value(engine.displays()).map_err(|e| e.to_string());
+            pending.reply(displays);
         }
         "ui.screenshot" => screenshot(ctx, pending),
         _ => {
@@ -90,6 +93,11 @@ pub(crate) fn write_png(path: &std::path::Path, image: &egui::ColorImage) -> Res
     let mut writer = enc.write_header().map_err(|e| e.to_string())?;
     writer.write_image_data(&rgba).map_err(|e| e.to_string())?;
     writer.finish().map_err(|e| e.to_string())
+}
+
+/// The document as JSON.
+fn state(engine: &Engine) -> Result<serde_json::Value, String> {
+    serde_json::to_value(engine.doc()).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
