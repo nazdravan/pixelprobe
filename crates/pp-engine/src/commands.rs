@@ -349,7 +349,35 @@ fn register_display(r: &mut Registry) {
                     msg: format!("no display {} (there are {})", p.index, s.displays.len()),
                 });
             }
-            s.doc.monitor = p.index;
+            if s.doc.monitor != p.index {
+                s.doc.monitor = p.index;
+                s.doc.mode = None;
+            }
+            Ok(Value::Null)
+        },
+    });
+    r.register(CommandSpec {
+        id: "display.select_mode",
+        label: "Select display mode",
+        menu: "Display/Select Mode...",
+        shortcut: None,
+        params: "{ index: number } (0-based, in the selected monitor's mode list)",
+        undoable: false,
+        enabled: |s| match s.displays.get(s.doc.monitor) {
+            Some(d) if !d.modes.is_empty() => Ok(()),
+            Some(_) => Err("the selected monitor reports no modes".into()),
+            None => Err("no displays detected".into()),
+        },
+        run: |s, p| {
+            let p: SelectDisplay = crate::params("display.select_mode", p)?;
+            let count = s.displays.get(s.doc.monitor).map_or(0, |d| d.modes.len());
+            if p.index >= count {
+                return Err(crate::EngineError::Failed {
+                    id: "display.select_mode".into(),
+                    msg: format!("no mode {} (there are {count})", p.index),
+                });
+            }
+            s.doc.mode = Some(p.index);
             Ok(Value::Null)
         },
     });
@@ -551,6 +579,36 @@ mod tests {
         // Bounded input.
         e.set_displays(vec![named("X"); 100]);
         assert_eq!(e.displays().len(), pp_core::display::MAX_DISPLAYS);
+
+        // Modes: select one, then switching monitor clears it.
+        let with_modes = |n: &str| DisplayInfo {
+            name: n.into(),
+            width: 800,
+            height: 600,
+            modes: vec![
+                pp_core::DisplayMode {
+                    width: 800,
+                    height: 600,
+                    bits: 32,
+                    refresh_mhz: 60_000
+                };
+                1
+            ],
+            ..Default::default()
+        };
+        e.set_displays(vec![with_modes("A"), named("B")]);
+        e.run("display.select_mode", serde_json::json!({"index": 0}))
+            .unwrap();
+        assert_eq!(e.doc().mode, Some(0));
+        assert!(
+            e.run("display.select_mode", serde_json::json!({"index": 1}))
+                .is_err()
+        );
+        e.run("display.select", serde_json::json!({"index": 1}))
+            .unwrap();
+        assert_eq!(e.doc().mode, None);
+        assert!(e.enabled("display.select_mode").is_err(), "B has no modes");
+        e.set_displays(vec![with_modes("A")]);
 
         let before = e.session().display_refreshes;
         e.run("display.refresh", Value::Null).unwrap();

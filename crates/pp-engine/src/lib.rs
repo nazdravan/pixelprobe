@@ -76,6 +76,11 @@ impl Engine {
         let n = self.session.displays.len();
         if self.session.doc.monitor >= n {
             self.session.doc.monitor = 0;
+            self.session.doc.mode = None;
+        }
+        let modes = self.selected_display().map_or(0, |d| d.modes.len());
+        if self.session.doc.mode.is_some_and(|m| m >= modes) {
+            self.session.doc.mode = None;
         }
     }
 

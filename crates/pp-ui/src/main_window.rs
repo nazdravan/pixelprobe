@@ -31,7 +31,7 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
                 left.label("Display properties:");
                 properties(left, engine);
                 right.label("Display modes:");
-                group(right, right.available_height(), "Not available yet (G9).");
+                modes(right, engine, actions);
             }
         });
     });
@@ -59,6 +59,54 @@ fn monitor_list(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
                         });
                     }
                 }
+            });
+    });
+}
+
+/// The selected monitor's modes; the current one is marked, a click selects one.
+fn modes(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
+    let Some(d) = engine.selected_display() else {
+        group(ui, ui.available_height(), "Select a monitor.");
+        return;
+    };
+    if d.modes.is_empty() {
+        group(ui, ui.available_height(), "This monitor reports no modes.");
+        return;
+    }
+    let current = d.current_mode();
+    egui::Frame::group(ui.style()).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.set_min_height(ui.available_height() - 16.0);
+        egui::ScrollArea::vertical()
+            .id_salt("pp-modes")
+            .show(ui, |ui| {
+                egui::Grid::new("pp-modes-grid")
+                    .num_columns(4)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        for h in ["Resolution", "Bits", "Frequency", ""] {
+                            ui.strong(h);
+                        }
+                        ui.end_row();
+                        for (i, m) in d.modes.iter().enumerate() {
+                            let text = format!("{} × {}", m.width, m.height);
+                            let selected = engine.doc().mode == Some(i);
+                            if ui.selectable_label(selected, text).clicked() && !selected {
+                                actions.push(Action {
+                                    id: "display.select_mode",
+                                    params: json!({ "index": i }),
+                                });
+                            }
+                            ui.label(if m.bits == 0 {
+                                "—".to_owned()
+                            } else {
+                                format!("{} bit", m.bits)
+                            });
+                            ui.label(display_props::hz(m.refresh_hz()));
+                            ui.weak(if current == Some(i) { "current" } else { "" });
+                            ui.end_row();
+                        }
+                    });
             });
     });
 }

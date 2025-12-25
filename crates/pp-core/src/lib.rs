@@ -327,6 +327,9 @@ pub struct Doc {
     /// Index of the display selected in the monitor list.
     #[serde(default)]
     pub monitor: usize,
+    /// Index of the mode selected in that display's mode list, if any.
+    #[serde(default)]
+    pub mode: Option<usize>,
 }
 
 #[cfg(test)]

@@ -107,6 +107,16 @@ impl DisplayInfo {
         (self.refresh_mhz > 0).then(|| f64::from(self.refresh_mhz) / 1000.0)
     }
 
+    /// Index of the mode the display is in now: same size, then the closest refresh rate.
+    pub fn current_mode(&self) -> Option<usize> {
+        self.modes
+            .iter()
+            .enumerate()
+            .filter(|(_, m)| m.width == self.width && m.height == self.height)
+            .min_by_key(|(_, m)| (m.refresh_mhz.abs_diff(self.refresh_mhz), u16::MAX - m.bits))
+            .map(|(i, _)| i)
+    }
+
     /// Desktop size in points (what apps lay out in).
     pub fn desktop_size(&self) -> (f64, f64) {
         (
@@ -250,6 +260,31 @@ mod tests {
             (1.0, 0.0, 0.0, 0.0)
         );
         assert_eq!(d.modes.len(), 1, "duplicates removed");
+    }
+
+    #[test]
+    fn current_mode_matches_size_then_rate() {
+        let mode = |width, height, refresh_mhz| DisplayMode {
+            width,
+            height,
+            bits: 32,
+            refresh_mhz,
+        };
+        let d = DisplayInfo {
+            width: 2560,
+            height: 1440,
+            refresh_mhz: 143_900,
+            modes: vec![
+                mode(1920, 1080, 144_000),
+                mode(2560, 1440, 60_000),
+                mode(2560, 1440, 144_000),
+            ],
+            ..Default::default()
+        }
+        .sanitized();
+        let i = d.current_mode().unwrap();
+        assert_eq!(d.modes[i], mode(2560, 1440, 144_000));
+        assert_eq!(DisplayInfo::default().current_mode(), None);
     }
 
     #[test]

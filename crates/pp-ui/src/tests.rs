@@ -238,6 +238,20 @@ fn monitor_list_and_properties() {
             height_mm: 336.0,
             bits: 32,
             refresh_mhz: 60_000,
+            modes: vec![
+                pp_engine::pp_core::DisplayMode {
+                    width: 1280,
+                    height: 720,
+                    bits: 32,
+                    refresh_mhz: 60_000,
+                },
+                pp_engine::pp_core::DisplayMode {
+                    width: 2560,
+                    height: 1440,
+                    bits: 32,
+                    refresh_mhz: 60_000,
+                },
+            ],
             ..Default::default()
         },
         DisplayInfo {
@@ -256,12 +270,18 @@ fn monitor_list_and_properties() {
     harness.run();
     // Properties of the selected (first) display.
     harness.get_by_label("2560 × 1440 px");
+    harness.get_by_label("current");
+    harness.get_by_label("1280 × 720").click();
     harness.get_by_label("Right  —  1920 × 1080").click();
     harness.get_by_label("Refresh").click();
     harness.run();
     assert_eq!(
         harness.state(),
         &vec![
+            Action {
+                id: "display.select_mode",
+                params: pp_engine::json!({"index": 0})
+            },
             Action {
                 id: "display.select",
                 params: pp_engine::json!({"index": 1})

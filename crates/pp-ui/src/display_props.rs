@@ -42,7 +42,8 @@ fn grouped(n: u64) -> String {
     out
 }
 
-fn hz(v: Option<f64>) -> String {
+/// A refresh rate as text: "60 Hz", "59.94 Hz", or — when unknown.
+pub fn hz(v: Option<f64>) -> String {
     v.map_or(UNKNOWN.into(), |v| {
         if (v - v.round()).abs() < 0.005 {
             format!("{v:.0} Hz")

@@ -55,11 +55,11 @@ impl Registry {
                 }
             },
             run: |s, _| {
-                // Navigation and selection are not history: keep the screen and monitor.
+                // Navigation and selection are not history: keep screen, monitor and mode.
                 let Session { doc, history, .. } = s;
-                let (screen, monitor) = (doc.screen, doc.monitor);
+                let (screen, monitor, mode) = (doc.screen, doc.monitor, doc.mode);
                 history.undo(doc);
-                (doc.screen, doc.monitor) = (screen, monitor);
+                (doc.screen, doc.monitor, doc.mode) = (screen, monitor, mode);
                 Ok(Value::Null)
             },
         });
@@ -78,11 +78,11 @@ impl Registry {
                 }
             },
             run: |s, _| {
-                // Navigation and selection are not history: keep the screen and monitor.
+                // Navigation and selection are not history: keep screen, monitor and mode.
                 let Session { doc, history, .. } = s;
-                let (screen, monitor) = (doc.screen, doc.monitor);
+                let (screen, monitor, mode) = (doc.screen, doc.monitor, doc.mode);
                 history.redo(doc);
-                (doc.screen, doc.monitor) = (screen, monitor);
+                (doc.screen, doc.monitor, doc.mode) = (screen, monitor, mode);
                 Ok(Value::Null)
             },
         });
