@@ -35,7 +35,7 @@ fn main_window_buttons_emit_commands() {
 
 #[test]
 fn every_screen_renders_and_closes() {
-    for id in ["test.motion", "test.pixel_refresh", "app.about"] {
+    for id in ["test.motion", "test.pixel_refresh", "app.about", "app.help"] {
         assert_eq!(
             click(Some(id), "Close"),
             vec![Action::new("view.close")],
@@ -289,4 +289,21 @@ fn monitor_list_and_properties() {
             Action::new("display.refresh"),
         ]
     );
+}
+
+#[test]
+fn help_button_key_and_shortcut_table() {
+    assert_eq!(click(None, "?"), vec![Action::new("app.help")]);
+    assert_eq!(
+        press(None, egui::Modifiers::NONE, egui::Key::F1),
+        vec![Action::new("app.help")]
+    );
+    let engine = Engine::new();
+    let rows = crate::help::shortcut_rows(&engine);
+    assert!(rows.contains(&("F1", "Help/Help")));
+    assert!(rows.contains(&("Escape", "View/Close")));
+    // Every shortcut in the table parses, so the table never lists a dead key.
+    for (key, _) in &rows {
+        assert!(crate::shortcuts::parse(key).is_some(), "{key}");
+    }
 }

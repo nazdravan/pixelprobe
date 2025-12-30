@@ -32,6 +32,7 @@ pub enum Screen {
     PatternTest,
     PixelRefresh,
     About,
+    Help,
 }
 
 /// A full-screen test pattern. Order here is the order of prev/next navigation.

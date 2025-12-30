@@ -4,6 +4,7 @@
 //! them through `Engine::run`. Nothing here mutates the document.
 
 pub mod display_props;
+pub(crate) mod help;
 mod main_window;
 mod motion_view;
 mod pattern_view;
@@ -42,21 +43,10 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine) -> Vec<Action> {
         Screen::MotionTest => motion_view::show(ui, engine, &mut actions),
         Screen::PatternTest => pattern_view::show(ui, engine, &mut actions),
         Screen::PixelRefresh => pixel_refresh::show(ui, engine, &mut actions),
-        Screen::About => about(ui, engine, &mut actions),
+        Screen::About => help::about(ui, engine, &mut actions),
+        Screen::Help => help::help(ui, engine, &mut actions),
     }
     actions
-}
-
-fn about(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
-    egui::CentralPanel::default().show(ui, |ui| {
-        ui.heading("pixelprobe");
-        ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
-        ui.add_space(8.0);
-        ui.label("Monitor test utility: display information, motion test,");
-        ui.label("full-screen test patterns and pixel refresh.");
-        ui.add_space(8.0);
-        command_button(ui, engine, "view.close", actions);
-    });
 }
 
 #[cfg(test)]

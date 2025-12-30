@@ -7,6 +7,7 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
         ui.add_space(8.0);
         ui.horizontal(|ui| {
             command_button(ui, engine, "app.about", actions);
+            crate::widgets::command_icon(ui, engine, "app.help", "?", actions);
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 // right_to_left: last added is leftmost.
                 command_button(ui, engine, "test.pixel_refresh", actions);

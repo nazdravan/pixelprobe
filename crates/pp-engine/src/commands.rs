@@ -29,6 +29,7 @@ pub fn register_app(r: &mut Registry) {
             Screen::PixelRefresh,
         ),
         ("app.about", "About...", "Help/About", None, Screen::About),
+        ("app.help", "Help", "Help/Help", Some("F1"), Screen::Help),
     ] {
         r.register(open_screen(id, label, menu, shortcut, screen));
     }
@@ -409,6 +410,7 @@ fn open_screen(
             Screen::PatternTest => |s, p| run(s, p, Screen::PatternTest),
             Screen::PixelRefresh => |s, p| run(s, p, Screen::PixelRefresh),
             Screen::About => |s, p| run(s, p, Screen::About),
+            Screen::Help => |s, p| run(s, p, Screen::Help),
             Screen::Main => |s, p| run(s, p, Screen::Main),
         },
     }
@@ -428,6 +430,7 @@ mod tests {
             ("test.pattern", Screen::PatternTest),
             ("test.pixel_refresh", Screen::PixelRefresh),
             ("app.about", Screen::About),
+            ("app.help", Screen::Help),
         ] {
             e.run(id, Value::Null).unwrap();
             assert_eq!(e.doc().screen, screen, "{id}");
