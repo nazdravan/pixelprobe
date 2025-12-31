@@ -2,7 +2,8 @@
 //! current mode from AppKit / CoreGraphics on macOS. No `unsafe`.
 
 use pp_ui::pp_engine::pp_core::{DisplayInfo, DisplayMode};
-use winit::window::Window;
+use winit::monitor::{MonitorHandle, VideoModeHandle};
+use winit::window::{Fullscreen, Window};
 
 /// Every display, the primary first. `window` tells which display shows the app.
 pub fn list(window: &Window) -> Vec<DisplayInfo> {
@@ -60,6 +61,43 @@ pub fn list(window: &Window) -> Vec<DisplayInfo> {
     // Primary first, then left to right, top to bottom.
     out.sort_by_key(|d| (!d.primary, d.x, d.y));
     out
+}
+
+/// The winit monitor for `info`: same desktop position and size.
+fn find_monitor(window: &Window, info: &DisplayInfo) -> Option<MonitorHandle> {
+    window.available_monitors().find(|m| {
+        let (p, s) = (m.position(), m.size());
+        (p.x, p.y, s.width, s.height) == (info.x, info.y, info.width, info.height)
+    })
+}
+
+/// The winit video mode equal to `mode` on `monitor`.
+fn find_mode(monitor: &MonitorHandle, mode: &DisplayMode) -> Option<VideoModeHandle> {
+    monitor.video_modes().find(|v| {
+        (
+            v.size().width,
+            v.size().height,
+            v.bit_depth(),
+            v.refresh_rate_millihertz(),
+        ) == (mode.width, mode.height, mode.bits, mode.refresh_mhz)
+    })
+}
+
+/// How to go full screen for a test: on the selected monitor, and in the selected mode when
+/// `mode` is given (exclusive full screen changes the display mode; leaving restores it).
+/// Falls back to the window's current monitor when the selection no longer matches.
+pub fn fullscreen(
+    window: &Window,
+    info: Option<&DisplayInfo>,
+    mode: Option<&DisplayMode>,
+) -> Fullscreen {
+    let monitor = info.and_then(|i| find_monitor(window, i));
+    if let (Some(m), Some(mode)) = (&monitor, mode)
+        && let Some(v) = find_mode(m, mode)
+    {
+        return Fullscreen::Exclusive(v);
+    }
+    Fullscreen::Borderless(monitor.or_else(|| window.current_monitor()))
 }
 
 #[cfg(target_os = "macos")]

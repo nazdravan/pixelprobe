@@ -307,3 +307,14 @@ fn help_button_key_and_shortcut_table() {
         assert!(crate::shortcuts::parse(key).is_some(), "{key}");
     }
 }
+
+#[test]
+fn test_mode_checkbox() {
+    assert_eq!(
+        click(None, "Set test mode as selection"),
+        vec![Action {
+            id: "display.test_in_mode",
+            params: pp_engine::json!({"on": true})
+        }]
+    );
+}

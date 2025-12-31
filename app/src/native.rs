@@ -94,15 +94,31 @@ struct App {
 const DISPLAY_POLL_SECS: f64 = 3.0;
 
 impl App {
-    /// The pattern and motion tests run full screen; leaving them restores the window.
-    fn sync_viewport(&mut self, ctx: &egui::Context) {
+    /// The pattern and motion tests run full screen on the selected monitor (in the selected
+    /// mode with "Set test mode as selection"); leaving them restores the window.
+    fn sync_viewport(&mut self, ctx: &egui::Context, frame: &eframe::Frame) {
         let screen = self.engine.doc().screen;
         if screen == self.last_screen {
             return;
         }
         let (now, before) = (full_screen(screen), full_screen(self.last_screen));
         if now != before {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(now));
+            match frame.winit_window() {
+                Some(window) => {
+                    let target = now.then(|| {
+                        let doc = self.engine.doc();
+                        let info = self.engine.selected_display();
+                        let mode = doc
+                            .test_in_mode
+                            .then(|| info.and_then(|d| doc.mode.and_then(|m| d.modes.get(m))))
+                            .flatten();
+                        crate::displays::fullscreen(window, info, mode)
+                    });
+                    window.set_fullscreen(target);
+                }
+                // Headless or unknown backend: let eframe do plain full screen.
+                None => ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(now)),
+            }
         }
         self.last_screen = screen;
     }
@@ -142,7 +158,7 @@ impl eframe::App for App {
 
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.read_displays(ui.ctx(), frame);
-        self.sync_viewport(ui.ctx());
+        self.sync_viewport(ui.ctx(), frame);
         let hide_status = self.engine.doc().screen == Screen::PatternTest;
         if let Some(msg) = self.status.as_ref().filter(|_| !hide_status) {
             let mut dismiss = false;
@@ -171,7 +187,7 @@ impl eframe::App for App {
             }
             Err(_) => self.status = Some("internal error while drawing; see the log".into()),
         }
-        self.sync_viewport(ui.ctx());
+        self.sync_viewport(ui.ctx(), frame);
     }
 }
 

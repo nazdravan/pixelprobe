@@ -331,6 +331,9 @@ pub struct Doc {
     /// Index of the mode selected in that display's mode list, if any.
     #[serde(default)]
     pub mode: Option<usize>,
+    /// Full-screen tests switch the selected monitor to the selected mode.
+    #[serde(default)]
+    pub test_in_mode: bool,
 }
 
 #[cfg(test)]

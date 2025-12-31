@@ -33,6 +33,7 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
                 properties(left, engine);
                 right.label("Display modes:");
                 modes(right, engine, actions);
+                test_mode_checkbox(right, engine, actions);
             }
         });
     });
@@ -64,6 +65,26 @@ fn monitor_list(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
     });
 }
 
+/// Full-screen tests use the selected monitor; with this on, also the selected mode.
+fn test_mode_checkbox(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
+    let mut on = engine.doc().test_in_mode;
+    let hint = if engine.doc().mode.is_some() {
+        "Full-screen tests switch the selected monitor to the selected mode, then switch it back."
+    } else {
+        "Select a mode in the list; until then tests use the current mode."
+    };
+    let label = engine
+        .registry()
+        .get("display.test_in_mode")
+        .map_or("Set test mode as selection", |c| c.label);
+    if ui.checkbox(&mut on, label).on_hover_text(hint).changed() {
+        actions.push(Action {
+            id: "display.test_in_mode",
+            params: json!({ "on": on }),
+        });
+    }
+}
+
 /// The selected monitor's modes; the current one is marked, a click selects one.
 fn modes(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
     let Some(d) = engine.selected_display() else {
@@ -71,13 +92,18 @@ fn modes(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
         return;
     };
     if d.modes.is_empty() {
-        group(ui, ui.available_height(), "This monitor reports no modes.");
+        group(
+            ui,
+            ui.available_height() - 32.0,
+            "This monitor reports no modes.",
+        );
         return;
     }
     let current = d.current_mode();
     egui::Frame::group(ui.style()).show(ui, |ui| {
         ui.set_width(ui.available_width());
-        ui.set_min_height(ui.available_height() - 16.0);
+        // Leave a row below for the test-mode checkbox.
+        ui.set_min_height(ui.available_height() - 48.0);
         egui::ScrollArea::vertical()
             .id_salt("pp-modes")
             .show(ui, |ui| {

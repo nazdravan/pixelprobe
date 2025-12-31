@@ -308,7 +308,27 @@ struct SelectDisplay {
     index: usize,
 }
 
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct OnOff {
+    on: bool,
+}
+
 fn register_display(r: &mut Registry) {
+    r.register(CommandSpec {
+        id: "display.test_in_mode",
+        label: "Set test mode as selection",
+        menu: "Display/Test in Selected Mode",
+        shortcut: None,
+        params: "{ on: bool }",
+        undoable: true,
+        enabled: always_enabled,
+        run: |s, p| {
+            let p: OnOff = crate::params("display.test_in_mode", p)?;
+            s.doc.test_in_mode = p.on;
+            Ok(Value::Null)
+        },
+    });
     r.register(CommandSpec {
         id: "display.refresh",
         label: "Refresh",
@@ -612,6 +632,16 @@ mod tests {
         assert_eq!(e.doc().mode, None);
         assert!(e.enabled("display.select_mode").is_err(), "B has no modes");
         e.set_displays(vec![with_modes("A")]);
+
+        e.run("display.test_in_mode", serde_json::json!({"on": true}))
+            .unwrap();
+        assert!(e.doc().test_in_mode);
+        assert!(
+            e.run("display.test_in_mode", serde_json::json!({"on": 1}))
+                .is_err()
+        );
+        e.run("edit.undo", Value::Null).unwrap();
+        assert!(!e.doc().test_in_mode);
 
         let before = e.session().display_refreshes;
         e.run("display.refresh", Value::Null).unwrap();
