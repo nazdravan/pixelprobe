@@ -318,3 +318,23 @@ fn test_mode_checkbox() {
         }]
     );
 }
+
+#[test]
+fn pattern_test_hides_toolbar_and_cursor_when_idle() {
+    let mut engine = Engine::new();
+    engine.run("test.pattern", Value::Null).unwrap();
+    let mut harness = Harness::new_ui_state(
+        |ui, actions: &mut Vec<Action>| actions.extend(show(ui, &engine)),
+        Vec::new(),
+    );
+    harness.run_steps(2);
+    let cursor = |h: &Harness<'_, Vec<Action>>| h.output().platform_output.cursor_icon;
+    assert_ne!(cursor(&harness), egui::CursorIcon::None, "just opened");
+    harness.get_by_label("›");
+    // Five seconds later (kittest advances 0.25 s per frame) with no pointer movement.
+    for _ in 0..20 {
+        harness.step();
+    }
+    assert_eq!(cursor(&harness), egui::CursorIcon::None);
+    assert!(harness.query_by_label("›").is_none(), "toolbar hidden");
+}

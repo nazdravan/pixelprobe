@@ -25,6 +25,9 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
             paint_pattern(ui, pattern, rect);
             if toolbar_visible(ui) {
                 toolbar(ui, engine, pattern, rect, actions);
+            } else {
+                // Idle: nothing on screen but the pattern, not even the pointer.
+                ui.ctx().set_cursor_icon(egui::CursorIcon::None);
             }
         });
 }
