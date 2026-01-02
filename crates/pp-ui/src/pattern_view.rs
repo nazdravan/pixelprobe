@@ -3,8 +3,8 @@
 use crate::Action;
 use crate::widgets::{command_icon, opened_at};
 use pp_engine::Engine;
-use pp_engine::pp_core::PatternId;
-use pp_patterns::render;
+use pp_engine::pp_core::{PatternId, SmpteVariant};
+use pp_patterns::render_with;
 
 /// Seconds without pointer movement before the toolbar hides.
 const TOOLBAR_IDLE_SECS: f32 = 3.0;
@@ -12,17 +12,17 @@ const TOOLBAR_IDLE_SECS: f32 = 3.0;
 /// Cached texture for the pattern currently on screen.
 #[derive(Clone)]
 struct Cached {
-    key: (PatternId, u32, u32),
+    key: (PatternId, SmpteVariant, u32, u32),
     texture: egui::TextureHandle,
 }
 
 pub fn show(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
-    let pattern = engine.doc().pattern;
+    let (pattern, smpte) = (engine.doc().pattern, engine.doc().smpte);
     egui::CentralPanel::default()
         .frame(egui::Frame::NONE.fill(egui::Color32::BLACK))
         .show(ui, |ui| {
             let rect = ui.max_rect();
-            paint_pattern(ui, pattern, rect);
+            paint_pattern(ui, pattern, smpte, rect);
             if toolbar_visible(ui) {
                 toolbar(ui, engine, pattern, rect, actions);
             } else {
@@ -51,7 +51,7 @@ fn toolbar_visible(ui: &egui::Ui) -> bool {
 }
 
 /// Render (or reuse) the pattern at the rect's physical pixel size and paint it 1:1.
-fn paint_pattern(ui: &mut egui::Ui, pattern: PatternId, rect: egui::Rect) {
+fn paint_pattern(ui: &mut egui::Ui, pattern: PatternId, smpte: SmpteVariant, rect: egui::Rect) {
     let ppp = ui.ctx().pixels_per_point();
     let to_px = |v: f32| {
         let p = (v * ppp).round();
@@ -61,13 +61,13 @@ fn paint_pattern(ui: &mut egui::Ui, pattern: PatternId, rect: egui::Rect) {
             1
         }
     };
-    let key = (pattern, to_px(rect.width()), to_px(rect.height()));
+    let key = (pattern, smpte, to_px(rect.width()), to_px(rect.height()));
     let id = egui::Id::unique("pp-pattern-texture");
     let cached = ui.ctx().data(|d| d.get_temp::<Cached>(id));
     let texture = match cached {
         Some(c) if c.key == key => c.texture,
         _ => {
-            let image = match render(key.0, key.1, key.2) {
+            let image = match render_with(key.0, key.1, key.2, key.3) {
                 Ok(img) => img,
                 Err(e) => {
                     ui.colored_label(egui::Color32::LIGHT_RED, e.to_string());
@@ -123,6 +123,16 @@ fn toolbar(
                         );
                         command_icon(ui, engine, "pattern.prev", "‹", actions);
                         command_icon(ui, engine, "pattern.next", "›", actions);
+                        if pattern == PatternId::SmpteBars {
+                            let id = "pattern.smpte_next";
+                            let text = format!("*2: {}", engine.doc().smpte.name());
+                            let resp = ui
+                                .add_enabled(engine.enabled(id).is_ok(), egui::Button::new(text))
+                                .on_hover_text("SMPTE sub-pattern (V)");
+                            if resp.clicked() {
+                                actions.push(Action::new(id));
+                            }
+                        }
                         ui.separator();
                         command_icon(ui, engine, "view.close", "×", actions);
                     });

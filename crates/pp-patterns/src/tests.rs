@@ -192,3 +192,41 @@ proptest! {
         }
     }
 }
+
+#[test]
+fn smpte_sub_patterns_rp219_clause_2() {
+    // At 1920×1080: d = 240, c ≈ 205.7. *2 is x 240..446 in rows 630..720, *3 below it.
+    let at2 = |v| {
+        px(
+            &render_with(PatternId::SmpteBars, v, 1920, 1080).unwrap(),
+            300,
+            675,
+        )
+    };
+    let at3 = |v| {
+        px(
+            &render_with(PatternId::SmpteBars, v, 1920, 1080).unwrap(),
+            300,
+            765,
+        )
+    };
+    assert_eq!(at2(SmpteVariant::White75), g(191));
+    assert_eq!(at2(SmpteVariant::White100), g(255));
+    // +I: R 41.2545 → 105, G 16.6946 → 43, B 0.
+    assert_eq!(at2(SmpteVariant::PlusI), Rgb8::new(105, 43, 0));
+    // −I: G 24.56 → 63, B 41.2545 → 105; +Q: R 25.3605 → 65, B 47.0286 → 120.
+    assert_eq!(at2(SmpteVariant::MinusIPlusQ), Rgb8::new(0, 63, 105));
+    assert_eq!(at3(SmpteVariant::MinusIPlusQ), Rgb8::new(65, 0, 120));
+    for v in [
+        SmpteVariant::White75,
+        SmpteVariant::White100,
+        SmpteVariant::PlusI,
+    ] {
+        assert_eq!(at3(v), g(0), "{v:?}: *3 stays black");
+    }
+    // The default renderer is the 75 % white variant.
+    assert_eq!(
+        render(PatternId::SmpteBars, 640, 360).unwrap(),
+        render_with(PatternId::SmpteBars, SmpteVariant::White75, 640, 360).unwrap()
+    );
+}

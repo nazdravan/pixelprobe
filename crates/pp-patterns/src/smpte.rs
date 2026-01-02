@@ -6,20 +6,22 @@
 //! - the 4:3 area is 3/4 a wide and holds 7 bars of width `c` = (3/4 a) / 7
 //! - side panels are `d` = (a − 7c) / 2 = a / 8 wide
 //!
-//! Levels are percentages of full scale; defaults of the selectable sub-patterns are used:
-//! *1 = 40 % gray, *2 = 75 % white, *3 = 0 % black, *4 = 15 % gray.
+//! Levels are percentages of full scale (IRE units map 1:1). *1 = 40 % gray, *4 = 15 % gray;
+//! *2 and *3 follow the chosen [`SmpteVariant`]: 75 % white (default), 100 % white,
+//! +I (R 41.2545, G 16.6946, B 0) or −I (R 0, G 24.56, B 41.2545) with +Q
+//! (R 25.3605, G 0, B 47.0286) in *3 (clause 2 and notes 4–5).
 //! On a full-range display the −2 % PLUGE step clips to black, which is the intended result:
 //! it must be indistinguishable from 0 % when black level is set correctly.
 //!
 //! On non-16:9 displays the same fractions of the width are used (the pattern is stretched).
 
-use crate::{Image, PatternError, Rgb8, at, gray, level, ramp};
+use crate::{Image, PatternError, Rgb8, SmpteVariant, at, gray, level, ramp};
 
 fn rgb(r: f64, g: f64, b: f64) -> Rgb8 {
     Rgb8::new(level(r), level(g), level(b))
 }
 
-pub fn render(w: u32, h: u32) -> Result<Image, PatternError> {
+pub fn render(variant: SmpteVariant, w: u32, h: u32) -> Result<Image, PatternError> {
     let mut img = Image::new(w, h, Rgb8::BLACK)?;
     let d = 1.0 / 8.0;
     let c = (3.0 / 4.0) / 7.0;
@@ -54,27 +56,35 @@ pub fn render(w: u32, h: u32) -> Result<Image, PatternError> {
         ],
     );
 
-    // Pattern 2: 100 % cyan, *2 (75 % white), 75 % white chroma setting signal, 100 % blue.
+    // *2 and *3 sub-patterns.
+    let (star2, star3) = match variant {
+        SmpteVariant::White75 => (gray(75.0), gray(0.0)),
+        SmpteVariant::White100 => (gray(100.0), gray(0.0)),
+        SmpteVariant::PlusI => (rgb(41.2545, 16.6946, 0.0), gray(0.0)),
+        SmpteVariant::MinusIPlusQ => (rgb(0.0, 24.56, 41.2545), rgb(25.3605, 0.0, 47.0286)),
+    };
+
+    // Pattern 2: 100 % cyan, *2, 75 % white chroma setting signal, 100 % blue.
     band(
         &mut img,
         y1,
         y2,
         &[
             (d, rgb(0.0, 100.0, 100.0)),
-            (c, gray(75.0)),
+            (c, star2),
             (6.0 * c, gray(75.0)),
             (d, rgb(0.0, 0.0, 100.0)),
         ],
     );
 
-    // Pattern 3: 100 % yellow, *3 (0 % black), luminance ramp 0 → 100 %, 100 % red.
+    // Pattern 3: 100 % yellow, *3, luminance ramp 0 → 100 %, 100 % red.
     band(
         &mut img,
         y2,
         y3,
         &[
             (d, rgb(100.0, 100.0, 0.0)),
-            (c, gray(0.0)),
+            (c, star3),
             (6.0 * c, gray(0.0)),
             (d, rgb(100.0, 0.0, 0.0)),
         ],

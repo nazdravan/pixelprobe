@@ -2,7 +2,9 @@
 
 use crate::registry::always_enabled;
 use crate::{CommandSpec, Registry, Session, Value};
-use pp_core::{MotionSpeed, MoveStep, PatternId, RefreshSpeed, Rgb8, Screen, Shape, ShapeSize};
+use pp_core::{
+    MotionSpeed, MoveStep, PatternId, RefreshSpeed, Rgb8, Screen, Shape, ShapeSize, SmpteVariant,
+};
 
 /// Register every app command on top of the built-ins.
 pub fn register_app(r: &mut Registry) {
@@ -72,7 +74,47 @@ struct SetPattern {
     pattern: PatternId,
 }
 
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SetSmpte {
+    variant: SmpteVariant,
+}
+
 fn register_patterns(r: &mut Registry) {
+    r.register(CommandSpec {
+        id: "pattern.smpte",
+        label: "SMPTE sub-pattern",
+        menu: "Pattern/SMPTE Sub-pattern...",
+        shortcut: None,
+        params: "{ variant: \"white75\" | \"white100\" | \"plus_i\" | \"minus_i_plus_q\" }",
+        undoable: true,
+        enabled: always_enabled,
+        run: |s, p| {
+            let p: SetSmpte = crate::params("pattern.smpte", p)?;
+            s.doc.smpte = p.variant;
+            Ok(Value::Null)
+        },
+    });
+    r.register(CommandSpec {
+        id: "pattern.smpte_next",
+        label: "Next SMPTE sub-pattern",
+        menu: "Pattern/Next SMPTE Sub-pattern",
+        shortcut: Some("V"),
+        params: "",
+        undoable: true,
+        enabled: |s| {
+            on_pattern_screen(s)?;
+            if s.doc.pattern == PatternId::SmpteBars {
+                Ok(())
+            } else {
+                Err("only for the SMPTE bars".into())
+            }
+        },
+        run: |s, _| {
+            s.doc.smpte = s.doc.smpte.next();
+            Ok(Value::Null)
+        },
+    });
     r.register(CommandSpec {
         id: "pattern.next",
         label: "Next pattern",
@@ -648,6 +690,32 @@ mod tests {
         assert_eq!(e.session().display_refreshes, before + 1);
         e.run("test.motion", Value::Null).unwrap();
         assert!(e.enabled("display.refresh").is_err());
+    }
+
+    #[test]
+    fn smpte_variant_commands() {
+        use pp_core::SmpteVariant;
+        let mut e = Engine::new();
+        assert!(e.enabled("pattern.smpte_next").is_err());
+        e.run("test.pattern", Value::Null).unwrap();
+        e.run("pattern.smpte_next", Value::Null).unwrap();
+        assert_eq!(e.doc().smpte, SmpteVariant::White100);
+        e.run(
+            "pattern.smpte",
+            serde_json::json!({"variant": "minus_i_plus_q"}),
+        )
+        .unwrap();
+        e.run("pattern.smpte_next", Value::Null).unwrap();
+        assert_eq!(e.doc().smpte, SmpteVariant::White75, "wraps");
+        assert!(
+            e.run("pattern.smpte", serde_json::json!({"variant": "minus_i"}))
+                .is_err(),
+            "-I alone is not allowed by RP 219"
+        );
+        e.run("pattern.next", Value::Null).unwrap();
+        assert!(e.enabled("pattern.smpte_next").is_err(), "not SMPTE");
+        e.run("edit.undo", Value::Null).unwrap();
+        assert_eq!(e.doc().smpte, SmpteVariant::MinusIPlusQ);
     }
 
     #[test]

@@ -338,3 +338,16 @@ fn pattern_test_hides_toolbar_and_cursor_when_idle() {
     assert_eq!(cursor(&harness), egui::CursorIcon::None);
     assert!(harness.query_by_label("›").is_none(), "toolbar hidden");
 }
+
+#[test]
+fn smpte_variant_button_and_key() {
+    let p = Some("test.pattern");
+    assert_eq!(
+        click(p, "*2: 75% white"),
+        vec![Action::new("pattern.smpte_next")]
+    );
+    assert_eq!(
+        press(p, egui::Modifiers::NONE, egui::Key::V),
+        vec![Action::new("pattern.smpte_next")]
+    );
+}

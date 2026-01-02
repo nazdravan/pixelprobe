@@ -123,6 +123,49 @@ impl PatternId {
     }
 }
 
+/// The selectable sub-patterns of SMPTE RP 219:2002 (clause 2). Only valid combinations
+/// exist: −I in *2 always goes with +Q in *3 (notes 4 and 5); the other choices keep *3 black.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SmpteVariant {
+    /// *2 = 75 % white, *3 = 0 % black (the default).
+    #[default]
+    White75,
+    /// *2 = 100 % white.
+    White100,
+    /// *2 = +I.
+    PlusI,
+    /// *2 = −I and *3 = +Q.
+    MinusIPlusQ,
+}
+
+impl SmpteVariant {
+    pub const ALL: [Self; 4] = [
+        Self::White75,
+        Self::White100,
+        Self::PlusI,
+        Self::MinusIPlusQ,
+    ];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::White75 => "75% white",
+            Self::White100 => "100% white",
+            Self::PlusI => "+I",
+            Self::MinusIPlusQ => "-I and +Q",
+        }
+    }
+
+    /// The next variant, wrapping around.
+    pub fn next(self) -> Self {
+        let i = Self::ALL.iter().position(|v| *v == self).unwrap_or(0);
+        Self::ALL
+            .get((i + 1) % Self::ALL.len())
+            .copied()
+            .unwrap_or_default()
+    }
+}
+
 /// Pixel refresh speed: a slider position 1…10, mapped to a noise update rate.
 ///
 /// Out-of-range values are rejected when deserialized, so a `RefreshSpeed` is always valid.
@@ -319,6 +362,9 @@ pub struct Doc {
     pub screen: Screen,
     /// Pattern shown by the pattern test.
     pub pattern: PatternId,
+    /// Sub-pattern choice for the SMPTE bars.
+    #[serde(default)]
+    pub smpte: SmpteVariant,
     /// Noise update speed of the pixel refresh.
     #[serde(default)]
     pub refresh_speed: RefreshSpeed,

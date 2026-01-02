@@ -11,7 +11,7 @@ mod smpte;
 pub use motion::motion_x;
 pub use noise::{NOISE_COLOURS, noise};
 
-pub use pp_core::{PatternId, Rgb8};
+pub use pp_core::{PatternId, Rgb8, SmpteVariant};
 
 /// Largest accepted side, in pixels.
 pub const MAX_SIDE: u32 = 16_384;
@@ -121,12 +121,22 @@ fn ramp(i: u32, n: u32) -> u8 {
     u8::try_from(v).unwrap_or(u8::MAX)
 }
 
-/// Render `pattern` at `width × height` physical pixels.
+/// Render `pattern` at `width × height` physical pixels, SMPTE bars with default sub-patterns.
 pub fn render(pattern: PatternId, width: u32, height: u32) -> Result<Image, PatternError> {
+    render_with(pattern, SmpteVariant::default(), width, height)
+}
+
+/// Render `pattern`; `smpte` picks the SMPTE bars' selectable sub-patterns.
+pub fn render_with(
+    pattern: PatternId,
+    smpte: SmpteVariant,
+    width: u32,
+    height: u32,
+) -> Result<Image, PatternError> {
     let solid = |c| Image::new(width, height, c);
     let (w, h) = (width, height);
     match pattern {
-        PatternId::SmpteBars => smpte::render(w, h),
+        PatternId::SmpteBars => smpte::render(smpte, w, h),
         PatternId::White => solid(Rgb8::WHITE),
         PatternId::Black => solid(Rgb8::BLACK),
         PatternId::Red => solid(Rgb8::new(255, 0, 0)),
