@@ -183,6 +183,19 @@ fn step_speed(s: &mut Session, id: &str, step: i8) -> Result<Value, crate::Engin
 
 fn register_refresh(r: &mut Registry) {
     r.register(CommandSpec {
+        id: "refresh.full_screen",
+        label: "Full screen",
+        menu: "Pixel Refresh/Full Screen",
+        shortcut: Some("F"),
+        params: "",
+        undoable: true,
+        enabled: on_refresh_screen,
+        run: |s, _| {
+            s.doc.refresh_full_screen = !s.doc.refresh_full_screen;
+            Ok(Value::Null)
+        },
+    });
+    r.register(CommandSpec {
         id: "refresh.speed",
         label: "Set refresh speed",
         menu: "Pixel Refresh/Speed...",
@@ -716,6 +729,17 @@ mod tests {
         assert!(e.enabled("pattern.smpte_next").is_err(), "not SMPTE");
         e.run("edit.undo", Value::Null).unwrap();
         assert_eq!(e.doc().smpte, SmpteVariant::MinusIPlusQ);
+    }
+
+    #[test]
+    fn refresh_full_screen_toggle() {
+        let mut e = Engine::new();
+        assert!(e.enabled("refresh.full_screen").is_err());
+        e.run("test.pixel_refresh", Value::Null).unwrap();
+        e.run("refresh.full_screen", Value::Null).unwrap();
+        assert!(e.doc().wants_full_screen());
+        e.run("refresh.full_screen", Value::Null).unwrap();
+        assert!(!e.doc().wants_full_screen());
     }
 
     #[test]

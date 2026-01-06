@@ -29,12 +29,17 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
     ui.ctx()
         .request_repaint_after_secs(((frame + 1.0) / rate - elapsed) as f32);
 
+    if engine.doc().refresh_full_screen {
+        full_screen(ui, frame as u64);
+        return;
+    }
     egui::Panel::bottom("pp-refresh-buttons").show(ui, |ui| {
         ui.add_space(6.0);
         // A row first: right_to_left on its own would claim the whole panel height.
         ui.horizontal(|ui| {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 command_button(ui, engine, "view.close", actions);
+                command_button(ui, engine, "refresh.full_screen", actions);
             });
         });
         ui.add_space(6.0);
@@ -56,6 +61,30 @@ pub fn show(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
         ui.label("A dead pixel (always black) cannot be fixed this way.");
     });
 }
+
+/// Noise over the whole display; a hint shows for a few seconds after entering.
+fn full_screen(ui: &mut egui::Ui, frame: u64) {
+    egui::CentralPanel::default()
+        .frame(egui::Frame::NONE.fill(egui::Color32::BLACK))
+        .show(ui, |ui| {
+            let rect = ui.max_rect();
+            paint_noise(ui, rect, frame);
+            let since = ui.input(|i| i.time) - opened_at(ui, "pp-refresh-full");
+            if since < HINT_SECS {
+                egui::Area::new(egui::Id::unique("pp-refresh-hint"))
+                    .order(egui::Order::Foreground)
+                    .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 16.0))
+                    .show(ui.ctx(), |ui| {
+                        egui::Frame::popup(ui.style()).show(ui, |ui| {
+                            ui.label("F: leave full screen    Esc: close");
+                        });
+                    });
+            }
+        });
+}
+
+/// How long the full-screen hint stays, in seconds.
+const HINT_SECS: f64 = 3.0;
 
 fn controls(ui: &mut egui::Ui, speed: RefreshSpeed, elapsed: f64, actions: &mut Vec<Action>) {
     egui::Frame::group(ui.style()).show(ui, |ui| {

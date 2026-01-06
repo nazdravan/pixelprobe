@@ -351,3 +351,37 @@ fn smpte_variant_button_and_key() {
         vec![Action::new("pattern.smpte_next")]
     );
 }
+
+#[test]
+fn pixel_refresh_full_screen() {
+    let r = Some("test.pixel_refresh");
+    assert_eq!(
+        click(r, "Full screen"),
+        vec![Action::new("refresh.full_screen")]
+    );
+    assert_eq!(
+        press(r, egui::Modifiers::NONE, egui::Key::F),
+        vec![Action::new("refresh.full_screen")]
+    );
+    let mut engine = Engine::new();
+    engine.run("test.pixel_refresh", Value::Null).unwrap();
+    engine.run("refresh.full_screen", Value::Null).unwrap();
+    let mut harness = Harness::new_ui_state(
+        |ui, actions: &mut Vec<Action>| actions.extend(show(ui, &engine)),
+        Vec::new(),
+    );
+    harness.run_steps(2);
+    harness.get_by_label("F: leave full screen    Esc: close");
+    assert!(
+        harness.query_by_label("Speed:").is_none(),
+        "controls hidden"
+    );
+    for _ in 0..20 {
+        harness.step();
+    }
+    assert!(
+        harness
+            .query_by_label("F: leave full screen    Esc: close")
+            .is_none()
+    );
+}

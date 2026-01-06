@@ -380,6 +380,20 @@ pub struct Doc {
     /// Full-screen tests switch the selected monitor to the selected mode.
     #[serde(default)]
     pub test_in_mode: bool,
+    /// Pixel refresh noise covers the whole display.
+    #[serde(default)]
+    pub refresh_full_screen: bool,
+}
+
+impl Doc {
+    /// Whether the app should be full screen now.
+    pub fn wants_full_screen(&self) -> bool {
+        match self.screen {
+            Screen::PatternTest | Screen::MotionTest => true,
+            Screen::PixelRefresh => self.refresh_full_screen,
+            Screen::Main | Screen::About | Screen::Help => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -445,6 +459,20 @@ mod tests {
         let m: Motion = serde_json::from_str(r#"{"shape":"circle"}"#).unwrap();
         assert_eq!(m.shape, Shape::Circle);
         assert_eq!(m.shape_color, Rgb8::WHITE);
+    }
+
+    #[test]
+    fn full_screen_screens() {
+        let mut d = Doc::default();
+        assert!(!d.wants_full_screen());
+        d.screen = Screen::PatternTest;
+        assert!(d.wants_full_screen());
+        d.screen = Screen::PixelRefresh;
+        assert!(!d.wants_full_screen());
+        d.refresh_full_screen = true;
+        assert!(d.wants_full_screen());
+        d.screen = Screen::Help;
+        assert!(!d.wants_full_screen());
     }
 
     #[test]

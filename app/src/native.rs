@@ -60,7 +60,7 @@ pub fn main() -> ExitCode {
                 engine: Engine::new(),
                 control,
                 status: None,
-                last_screen: Screen::Main,
+                full_screen: false,
                 displays_read: None,
             }))
         }),
@@ -74,18 +74,13 @@ pub fn main() -> ExitCode {
     }
 }
 
-/// Screens shown full screen.
-fn full_screen(screen: Screen) -> bool {
-    matches!(screen, Screen::PatternTest | Screen::MotionTest)
-}
-
 struct App {
     engine: Engine,
     control: Option<ControlServer>,
     /// Last command error or caught UI panic, shown in a status line.
     status: Option<String>,
-    /// Screen shown last frame, to react to screen changes (full screen on/off).
-    last_screen: Screen,
+    /// Whether the window is full screen now (to react to changes).
+    full_screen: bool,
     /// When the displays were last read and the `display.refresh` count seen then.
     displays_read: Option<(f64, u64)>,
 }
@@ -97,12 +92,8 @@ impl App {
     /// The pattern and motion tests run full screen on the selected monitor (in the selected
     /// mode with "Set test mode as selection"); leaving them restores the window.
     fn sync_viewport(&mut self, ctx: &egui::Context, frame: &eframe::Frame) {
-        let screen = self.engine.doc().screen;
-        if screen == self.last_screen {
-            return;
-        }
-        let (now, before) = (full_screen(screen), full_screen(self.last_screen));
-        if now != before {
+        let now = self.engine.doc().wants_full_screen();
+        if now != self.full_screen {
             match frame.winit_window() {
                 Some(window) => {
                     let target = now.then(|| {
@@ -119,8 +110,8 @@ impl App {
                 // Headless or unknown backend: let eframe do plain full screen.
                 None => ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(now)),
             }
+            self.full_screen = now;
         }
-        self.last_screen = screen;
     }
 }
 
@@ -159,7 +150,9 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.read_displays(ui.ctx(), frame);
         self.sync_viewport(ui.ctx(), frame);
-        let hide_status = self.engine.doc().screen == Screen::PatternTest;
+        // Only the motion test keeps its controls in full screen.
+        let doc = self.engine.doc();
+        let hide_status = doc.wants_full_screen() && doc.screen != Screen::MotionTest;
         if let Some(msg) = self.status.as_ref().filter(|_| !hide_status) {
             let mut dismiss = false;
             egui::Panel::top("status").show(ui, |ui| {
