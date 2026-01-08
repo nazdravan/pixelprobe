@@ -1,4 +1,4 @@
-//! Project automation: `cargo xtask <ci|fmt|clippy|test|layers|wasm>`.
+//! Project automation: `cargo xtask <ci|fmt|clippy|test|layers|wasm|web>`.
 
 use std::collections::BTreeMap;
 use std::process::{Command, ExitCode};
@@ -18,8 +18,9 @@ fn main() -> ExitCode {
         "test" => test(),
         "layers" => layers(),
         "wasm" => wasm(),
+        "web" => web(),
         _ => {
-            eprintln!("usage: cargo xtask <ci|fmt|clippy|test|layers|wasm>");
+            eprintln!("usage: cargo xtask <ci|fmt|clippy|test|layers|wasm|web>");
             return ExitCode::from(2);
         }
     };
@@ -106,6 +107,43 @@ fn wasm() -> Res {
         args.push(krate);
     }
     cargo(&args)
+}
+
+/// Where `cargo xtask web` puts the site.
+const WEB_OUT: &str = "target/web";
+
+/// Build the web app into `target/web` (index.html + pixelprobe.js + wasm). Needs the
+/// `wasm-bindgen` CLI at the same version as the `wasm-bindgen` crate in Cargo.lock.
+fn web() -> Res {
+    cargo(&[
+        "build",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown",
+        "-p",
+        "pixelprobe",
+    ])?;
+    let wasm = "target/wasm32-unknown-unknown/release/pixelprobe.wasm";
+    let status = Command::new("wasm-bindgen")
+        .args([
+            "--target",
+            "web",
+            "--no-typescript",
+            "--out-name",
+            "pixelprobe",
+            "--out-dir",
+            WEB_OUT,
+            wasm,
+        ])
+        .status()
+        .map_err(|e| format!("cannot run wasm-bindgen (cargo install wasm-bindgen-cli): {e}"))?;
+    if !status.success() {
+        return Err(format!("wasm-bindgen exited with {status}"));
+    }
+    std::fs::copy("app/web/index.html", format!("{WEB_OUT}/index.html"))
+        .map_err(|e| format!("cannot copy index.html: {e}"))?;
+    eprintln!("web build in {WEB_OUT}; serve it, e.g. python3 -m http.server -d {WEB_OUT}");
+    Ok(())
 }
 
 /// Every workspace crate declares `[package.metadata.pixelprobe] layer = N`; a crate may

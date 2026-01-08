@@ -1797,6 +1797,8 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "pp-control",
  "pp-ui",
+ "wasm-bindgen-futures",
+ "web-sys",
  "winit",
 ]
 

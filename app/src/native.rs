@@ -1,7 +1,6 @@
 use pp_control::ControlServer;
 use pp_ui::egui;
 use pp_ui::pp_engine::Engine;
-use pp_ui::pp_engine::pp_core::Screen;
 use std::process::ExitCode;
 
 /// Parsed command line.
@@ -150,36 +149,7 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.read_displays(ui.ctx(), frame);
         self.sync_viewport(ui.ctx(), frame);
-        // Only the motion test keeps its controls in full screen.
-        let doc = self.engine.doc();
-        let hide_status = doc.wants_full_screen() && doc.screen != Screen::MotionTest;
-        if let Some(msg) = self.status.as_ref().filter(|_| !hide_status) {
-            let mut dismiss = false;
-            egui::Panel::top("status").show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.colored_label(ui.visuals().warn_fg_color, msg);
-                    dismiss = ui.small_button("×").clicked();
-                });
-            });
-            if dismiss {
-                self.status = None;
-            }
-        }
-        // Panic guard for the frame: panels only read the engine, so a panic while drawing
-        // cannot corrupt the document; report it and keep running.
-        let engine = &self.engine;
-        let drawn =
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| pp_ui::show(ui, engine)));
-        match drawn {
-            Ok(actions) => {
-                for action in actions {
-                    if let Err(e) = self.engine.run(action.id, action.params) {
-                        self.status = Some(e.to_string());
-                    }
-                }
-            }
-            Err(_) => self.status = Some("internal error while drawing; see the log".into()),
-        }
+        crate::shell::frame(ui, &mut self.engine, &mut self.status);
         self.sync_viewport(ui.ctx(), frame);
     }
 }

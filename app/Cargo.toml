@@ -17,6 +17,11 @@ pp-control.workspace = true
 # Same winit as eframe; used only to list the monitors.
 winit = { version = "0.30.13", default-features = false }
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
+# Same web-sys as eframe; only the extra APIs used here.
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlCanvasElement", "Screen", "console"] }
+
 # macOS display names, physical size and current mode (all safe bindings, no `unsafe`).
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
