@@ -21,12 +21,14 @@ pub fn list_label(d: &DisplayInfo) -> String {
     } else {
         &d.name
     };
-    let res = format!("{} × {}", d.width, d.height);
-    if tags.is_empty() {
-        format!("{name}  —  {res}")
-    } else {
-        format!("{name}  —  {res}  ({})", tags.join(", "))
+    let mut line = format!("{name}  —  {} × {}", d.width, d.height);
+    if !d.gpu.is_empty() {
+        line.push_str(&format!("  —  {}", d.gpu));
     }
+    if !tags.is_empty() {
+        line.push_str(&format!("  ({})", tags.join(", ")));
+    }
+    line
 }
 
 /// `n` with thin thousands separators: 16777216 → "16 777 216".
@@ -69,6 +71,14 @@ pub fn properties(d: &DisplayInfo) -> Vec<(&'static str, String)> {
                 UNKNOWN.into()
             } else {
                 d.name.clone()
+            },
+        ),
+        (
+            "Graphics",
+            if d.gpu.is_empty() {
+                UNKNOWN.into()
+            } else {
+                d.gpu.clone()
             },
         ),
         ("Primary", yes_no(d.primary)),
@@ -143,6 +153,7 @@ mod tests {
     fn rows_for_a_known_display() {
         let d = DisplayInfo {
             name: "Studio".into(),
+            gpu: "Apple M2".into(),
             primary: true,
             width: 5120,
             height: 2880,
@@ -163,7 +174,11 @@ mod tests {
         assert_eq!(get("Pixels per inch (X)"), Some("217.9"));
         assert_eq!(get("Screen aspect ratio"), Some("16:9 (1.78)"));
         assert_eq!(get("Position"), Some("(0, 0) – (5120, 2880)"));
-        assert_eq!(list_label(&d), "Studio  —  5120 × 2880  (primary)");
+        assert_eq!(get("Graphics"), Some("Apple M2"));
+        assert_eq!(
+            list_label(&d),
+            "Studio  —  5120 × 2880  —  Apple M2  (primary)"
+        );
     }
 
     #[test]
@@ -177,6 +192,7 @@ mod tests {
         let rows = properties(&d);
         for key in [
             "Name",
+            "Graphics",
             "Refresh rate",
             "Colours",
             "Physical size",

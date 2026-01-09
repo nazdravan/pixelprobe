@@ -27,7 +27,8 @@ web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlC
 objc2 = "0.6"
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSDictionary", "NSValue", "NSArray", "NSEnumerator"] }
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSScreen", "objc2-core-foundation"] }
-objc2-core-graphics = { version = "0.3", default-features = false, features = ["std", "CGDirectDisplay", "CGDisplayConfiguration", "CGError", "libc"] }
+objc2-core-graphics = { version = "0.3", default-features = false, features = ["std", "CGDirectDisplay", "CGDirectDisplayMetal", "CGDisplayConfiguration", "CGError", "libc", "objc2", "objc2-metal"] }
+objc2-metal = { version = "0.3", default-features = false, features = ["std", "MTLDevice"] }
 objc2-core-foundation = { version = "0.3", default-features = false, features = ["std", "CFCGTypes"] }
 
 [lints]

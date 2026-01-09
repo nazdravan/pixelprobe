@@ -105,10 +105,11 @@ mod macos {
     use objc2::MainThreadMarker;
     use objc2_app_kit::NSScreen;
     use objc2_core_graphics::{
-        CGDisplayCopyDisplayMode, CGDisplayIsBuiltin, CGDisplayIsMain, CGDisplayMode,
-        CGDisplayRotation, CGDisplayScreenSize,
+        CGDirectDisplayCopyCurrentMetalDevice, CGDisplayCopyDisplayMode, CGDisplayIsBuiltin,
+        CGDisplayIsMain, CGDisplayMode, CGDisplayRotation, CGDisplayScreenSize,
     };
     use objc2_foundation::{NSNumber, NSString};
+    use objc2_metal::MTLDevice;
     use pp_ui::pp_engine::pp_core::DisplayInfo;
     use winit::monitor::MonitorHandle;
     use winit::platform::macos::MonitorHandleExtMacOS;
@@ -128,6 +129,10 @@ mod macos {
             if rate.is_finite() && rate > 0.0 {
                 info.refresh_mhz = (rate * 1000.0).round().min(f64::from(u32::MAX)) as u32;
             }
+        }
+        // The GPU driving this display ("Apple M2", "AMD Radeon Pro 560X").
+        if let Some(device) = CGDirectDisplayCopyCurrentMetalDevice(id) {
+            info.gpu = device.name().to_string();
         }
         if let Some(name) = screen_name(id) {
             info.name = name;

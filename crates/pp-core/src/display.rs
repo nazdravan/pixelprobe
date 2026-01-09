@@ -31,6 +31,8 @@ impl DisplayMode {
 #[serde(default)]
 pub struct DisplayInfo {
     pub name: String,
+    /// Graphics adapter driving the display; empty when unknown.
+    pub gpu: String,
     pub primary: bool,
     pub builtin: bool,
     /// The app window is on this display.
@@ -56,6 +58,17 @@ pub struct DisplayInfo {
     pub modes: Vec<DisplayMode>,
 }
 
+/// Cut `s` to at most [`MAX_NAME`] bytes, on a character boundary.
+fn truncate(s: &mut String) {
+    if s.len() > MAX_NAME {
+        let mut end = MAX_NAME;
+        while !s.is_char_boundary(end) {
+            end -= 1;
+        }
+        s.truncate(end);
+    }
+}
+
 /// Greatest common divisor (0 only for (0, 0)).
 fn gcd(mut a: u32, mut b: u32) -> u32 {
     while b != 0 {
@@ -69,13 +82,8 @@ const MM_PER_INCH: f64 = 25.4;
 impl DisplayInfo {
     /// Clamp everything the platform sent to sane, finite values and bounded sizes.
     pub fn sanitized(mut self) -> Self {
-        if self.name.len() > MAX_NAME {
-            let mut end = MAX_NAME;
-            while !self.name.is_char_boundary(end) {
-                end -= 1;
-            }
-            self.name.truncate(end);
-        }
+        truncate(&mut self.name);
+        truncate(&mut self.gpu);
         // A visible image 1 cm to 10 m wide is plausible; anything else counts as unknown.
         let finite_pos = |v: f64| {
             if (10.0..=10_000.0).contains(&v) {
@@ -238,6 +246,7 @@ mod tests {
     fn sanitize_bounds_bad_input() {
         let d = DisplayInfo {
             name: "é".repeat(200),
+            gpu: "ü".repeat(200),
             scale: f64::NAN,
             width_mm: -3.0,
             height_mm: f64::INFINITY,
