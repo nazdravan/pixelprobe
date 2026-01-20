@@ -385,3 +385,52 @@ fn pixel_refresh_full_screen() {
             .is_none()
     );
 }
+
+/// Like the real app: a 740×620 window at Retina scale, the main window drawn first, then
+/// the screen opened by its command. Returns the harness after `frames` more frames.
+fn app_like(open: &str, frames: usize) -> (Engine, Vec<(String, egui::Rect)>) {
+    let engine = std::cell::RefCell::new(Engine::new());
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(740.0, 620.0))
+        .with_pixels_per_point(2.0)
+        .build_ui_state(
+            |ui, actions: &mut Vec<Action>| actions.extend(show(ui, &engine.borrow())),
+            Vec::new(),
+        );
+    harness.run_steps(3);
+    engine.borrow_mut().run(open, Value::Null).unwrap();
+    harness.run_steps(frames);
+    let rect = |label: &str| {
+        harness
+            .query_by_label(label)
+            .map(|n| (label.to_owned(), n.rect()))
+    };
+    let found: Vec<_> = ["Speed:", "Close"].into_iter().filter_map(rect).collect();
+    drop(harness);
+    (engine.into_inner(), found)
+}
+
+#[test]
+fn screens_keep_their_layout_in_an_app_sized_window() {
+    // G7 regression: the bottom bar with Close once filled the whole window.
+    let (_, found) = app_like("test.pixel_refresh", 30);
+    let get = |k: &str| found.iter().find(|(l, _)| l == k).map(|(_, r)| *r);
+    let (speed, close) = (get("Speed:").unwrap(), get("Close").unwrap());
+    assert!(speed.min.y > 100.0, "noise above the controls: {speed:?}");
+    assert!(
+        close.min.y > speed.max.y,
+        "Close below the controls: {close:?}"
+    );
+    assert!(
+        close.max.y > 560.0,
+        "Close at the bottom of a 620 pt window: {close:?}"
+    );
+
+    let (_, found) = app_like("app.help", 30);
+    let close = found
+        .iter()
+        .find(|(l, _)| l == "Close")
+        .map(|(_, r)| *r)
+        .unwrap();
+    assert!(close.max.y > 560.0, "help: Close at the bottom: {close:?}");
+}
