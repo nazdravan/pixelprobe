@@ -10,6 +10,8 @@ mod shell;
 #[cfg(not(target_arch = "wasm32"))]
 mod displays;
 #[cfg(not(target_arch = "wasm32"))]
+mod edid_sources;
+#[cfg(not(target_arch = "wasm32"))]
 mod native;
 #[cfg(target_arch = "wasm32")]
 mod web;

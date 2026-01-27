@@ -58,6 +58,9 @@ pub fn list(window: &Window) -> Vec<DisplayInfo> {
             info
         })
         .collect();
+    // Off macOS: physical size, a real name and the GPU from the EDIDs.
+    let (sources, gpus) = crate::edid_sources::sources();
+    pp_edid::fill(&mut out, &sources, &gpus);
     // Primary first, then left to right, top to bottom.
     out.sort_by_key(|d| (!d.primary, d.x, d.y));
     out

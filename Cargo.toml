@@ -15,6 +15,7 @@ pp-patterns = { path = "crates/pp-patterns" }
 pp-engine = { path = "crates/pp-engine" }
 pp-ui = { path = "crates/pp-ui" }
 pp-control = { path = "crates/pp-control" }
+pp-edid = { path = "crates/pp-edid" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"

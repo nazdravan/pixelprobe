@@ -16,6 +16,12 @@ eframe.workspace = true
 pp-control.workspace = true
 # Same winit as eframe; used only to list the monitors.
 winit = { version = "0.30.13", default-features = false }
+# Physical size, names and GPUs off macOS come from the monitors' EDIDs.
+pp-edid.workspace = true
+
+# Windows: EDIDs and adapter names from the registry (safe API).
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
