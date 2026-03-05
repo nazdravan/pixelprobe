@@ -2,6 +2,7 @@
 name = "pp-control"
 description = "Local control channel (JSON lines over TCP) for driving and screenshotting pixelprobe"
 version.workspace = true
+license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
