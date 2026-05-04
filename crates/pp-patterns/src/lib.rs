@@ -78,9 +78,9 @@ impl Image {
             let Some(row) = self.rgba.get_mut(start..end) else {
                 continue;
             };
-            for (px, x) in row.chunks_exact_mut(4).zip(x0..x1) {
+            for (px, x) in row.as_chunks_mut::<4>().0.iter_mut().zip(x0..x1) {
                 let c = f(x, y);
-                px.copy_from_slice(&[c.r, c.g, c.b, 255]);
+                *px = [c.r, c.g, c.b, 255];
             }
         }
     }

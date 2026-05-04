@@ -136,7 +136,7 @@ proptest! {
         let p = PatternId::ALL[idx];
         let img = render(p, w, h).unwrap();
         prop_assert_eq!(img.rgba.len(), (w * h * 4) as usize);
-        prop_assert!(img.rgba.chunks_exact(4).all(|px| px[3] == 255));
+        prop_assert!(img.rgba.as_chunks::<4>().0.iter().all(|px| px[3] == 255));
     }
 
     #[test]
