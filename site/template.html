@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pixelprobe — monitor test utility</title>
+<meta name="description" content="Free monitor test utility for Windows, macOS, Linux and the browser: display information, SMPTE colour bars and other test patterns, a motion test and pixel refresh for stuck pixels.">
+<link rel="canonical" href="{{ page }}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="pixelprobe — monitor test utility">
+<meta property="og:description" content="Display information, test patterns, a motion test and pixel refresh. Free and open source.">
+<meta property="og:url" content="{{ page }}">
+<meta property="og:image" content="{{ page }}assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="{{ bg_dark }}">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="preload" href="assets/fonts/Inter-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/style.css">
+<script type="module" src="assets/main.js"></script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="./">
+      <img src="assets/icon.png" width="30" height="30" alt="">
+      <span>pixel<b>probe</b></span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#changes">Changes</a>
+      <a href="#download">Download</a>
+      <a href="{{ repo }}">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-text">
+        <h1>Test your monitor,<br><span>pixel by pixel.</span></h1>
+        <p class="lead">See what each display reports, check it with full-screen test patterns and a
+          motion test, and run pixel refresh noise over stuck pixels.</p>
+        <div class="cta">
+          <a id="download-main" class="button" href="{{ main_href }}" data-kinds="{{ kinds_json }}">
+            <span class="label">{{ main_label }}</span>
+          </a>
+          {{{ web_button }}}
+        </div>
+        <p id="download-note" class="note">{{ main_note }}</p>
+        <p class="meta">{{ version_line }} · Windows · macOS · Linux · Web · <a href="{{ repo }}">Open source</a></p>
+      </div>
+      <figure class="monitor">
+        <div class="screen"><img src="assets/screenshot.png" width="1480" height="1240"
+          alt="pixelprobe: monitor list, display properties and display modes"></div>
+        <div class="stand" aria-hidden="true"></div>
+      </figure>
+    </div>
+  </section>
+
+  <div class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+  <section id="features" class="features">
+    <div class="wrap">
+      <h2>Four tools in one window</h2>
+      <div class="feature">
+        <img src="assets/pattern-test.png" width="1600" height="900" loading="lazy"
+          alt="SMPTE colour bars with the pattern toolbar">
+        <div>
+          <h3>Pattern test</h3>
+          <p>15 full-screen patterns at the display's own resolution, one image pixel per screen
+            pixel: SMPTE colour bars after RP 219 with their sub-patterns, solid colours for dead and
+            stuck pixels, gray ramps and steps for banding, black and white level patches, a grid
+            for geometry and checkerboards for sharpness.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <img src="assets/motion-test.png" width="1600" height="900" loading="lazy"
+          alt="Motion test: a white square moving on black">
+        <div>
+          <h3>Motion test</h3>
+          <p>A square or circle moves across the screen at 5 to 240 steps per second, pixel by
+            pixel or shape by shape. Look for blur, trails and uneven steps; the bar shows the
+            display's refresh rate and the rate the app really draws at.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <img src="assets/pixel-refresh.png" width="1480" height="1240" loading="lazy"
+          alt="Pixel refresh: random red, green, blue, white and black cells">
+        <div>
+          <h3>Pixel refresh</h3>
+          <p>Random red, green, blue, white and black cells, up to 60 times a second, in a window
+            you move over the stuck pixel or across the whole display. It can bring a stuck pixel
+            back; a dead one cannot be fixed.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <img src="assets/screenshot.png" width="1480" height="1240" loading="lazy"
+          alt="Display properties and display modes">
+        <div>
+          <h3>Display information</h3>
+          <p>Every monitor with its name, graphics adapter, resolution and scale, refresh rate,
+            colour depth, physical size, diagonal, pixels per inch and aspect ratios, and the
+            display modes it supports. Run any test full screen on any monitor, in any of its
+            modes.</p>
+        </div>
+      </div>
+      <ul class="points">
+        <li><b>Free and open source</b>MIT or Apache-2.0, on GitHub.</li>
+        <li><b>From the standards</b>SMPTE RP 219 colour bars, VESA EDID monitor data.</li>
+        <li><b>No tracking</b>No account, no network, nothing collected.</li>
+        <li><b>Keyboard shortcuts</b>Tests, speeds and patterns from the keyboard; F1 lists them.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="changes" class="changes">
+    <div class="wrap">
+      <h2>Latest changes</h2>
+      {{{ changes }}}
+      <p class="small"><a href="{{ repo }}/blob/main/CHANGELOG.md">Full changelog</a></p>
+    </div>
+  </section>
+
+  <section id="download" class="download">
+    <div class="wrap">
+      <h2>Download</h2>
+      {{{ downloads }}}
+      <div class="ways">
+        <div>
+          <h3>In the browser</h3>
+          <p>The same app, compiled to WebAssembly. Display details are limited to what the
+            browser reports.</p>
+          <p><a href="app/">Open pixelprobe in the browser</a></p>
+        </div>
+        <div>
+          <h3>From source</h3>
+          <p>With <a href="https://rustup.rs">Rust</a> installed, in a clone of the repository:</p>
+          <pre><code>cargo run --release</code></pre>
+        </div>
+        <div>
+          <h3>Unsigned builds</h3>
+          <p>Windows SmartScreen asks on first start (<i>More info → Run anyway</i>); on macOS
+            right-click the app → <i>Open</i>, or see the <a href="{{ repo }}#macos">README</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-row">
+    <span>pixelprobe · <a href="{{ repo }}">GitHub</a> · <a href="{{ repo }}/issues">Issues</a> · MIT or Apache-2.0</span>
+    <span class="small">Inspired by the features of Monitor Test Utility; not affiliated with it.</span>
+  </div>
+</footer>
+</body>
+</html>

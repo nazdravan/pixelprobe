@@ -1,0 +1,42 @@
+{
+ "tagName": "v0.1.0",
+ "publishedAt": "2026-11-01T12:00:00Z",
+ "url": "https://github.com/nazdravan/pixelprobe/releases/tag/v0.1.0",
+ "assets": [
+  {
+   "name": "pixelprobe-0.1.0-windows-x64.msi",
+   "url": "https://github.com/nazdravan/pixelprobe/releases/download/v0.1.0/pixelprobe-0.1.0-windows-x64.msi",
+   "size": 3158073
+  },
+  {
+   "name": "pixelprobe-0.1.0-windows-x64-portable.zip",
+   "url": "https://github.com/nazdravan/pixelprobe/releases/download/v0.1.0/pixelprobe-0.1.0-windows-x64-portable.zip",
+   "size": 4206649
+  },
+  {
+   "name": "pixelprobe-0.1.0-macos-universal.dmg",
+   "url": "https://github.com/nazdravan/pixelprobe/releases/download/v0.1.0/pixelprobe-0.1.0-macos-universal.dmg",
+   "size": 5255225
+  },
+  {
+   "name": "pixelprobe-0.1.0-linux-x86_64.AppImage",
+   "url": "https://github.com/nazdravan/pixelprobe/releases/download/v0.1.0/pixelprobe-0.1.0-linux-x86_64.AppImage",
+   "size": 6303801
+  },
+  {
+   "name": "pixelprobe-0.1.0-linux-x86_64.deb",
+   "url": "https://github.com/nazdravan/pixelprobe/releases/download/v0.1.0/pixelprobe-0.1.0-linux-x86_64.deb",
+   "size": 7352377
+  },
+  {
+   "name": "pixelprobe-0.1.0-linux-x86_64.tar.gz",
+   "url": "https://github.com/nazdravan/pixelprobe/releases/download/v0.1.0/pixelprobe-0.1.0-linux-x86_64.tar.gz",
+   "size": 8400953
+  },
+  {
+   "name": "SHA256SUMS.txt",
+   "url": "https://github.com/nazdravan/pixelprobe/releases/download/v0.1.0/SHA256SUMS.txt",
+   "size": 700
+  }
+ ]
+}

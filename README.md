@@ -207,6 +207,7 @@ rate, physical size or modes), and full screen uses the browser's Fullscreen API
 | `crates/pp-ui` | the egui screens and the theme |
 | `app/` | the desktop and web program: monitor enumeration, full screen, EDID sources |
 | `packaging/` | release packages: AppImage, `.deb` and `.tar.gz` for Linux, `.app` and `.dmg` for macOS, `.msi` and `.zip` for Windows; `version.sh`, `changelog.sh` |
+| `site/` | the landing page for GitHub Pages: `build.py` (theme colours, changelog and download links from the latest release), template, styles, tests |
 | `xtask/` | `cargo xtask ci` (format, lint, tests, layer rules, wasm check) and `cargo xtask web` |
 | `assets/` | `theme.toml` (all colours), `icon.py` (logo and icons), `banner.py` (this README's banner), `screenshots.py` (these screenshots, taken by the app), fonts |
 
@@ -224,15 +225,18 @@ same version only runs the tests. Details in [`docs/releasing.md`](docs/releasin
 cargo xtask ci
 ```
 
-Runs formatting and lint checks, the tests (pattern pixel values against SMPTE RP 219, EDID
+`cargo xtask ci` runs formatting and lint checks, the tests (pattern pixel values against SMPTE RP 219, EDID
 parsing on a real monitor's EDID, property tests on untrusted input, and headless UI tests that
 click the real buttons), the layer rules and the web build check. GitHub Actions runs the same
 on macOS, Windows and Linux. The images in `docs/assets/` are regenerated with:
 
 ```sh
-python3 assets/icon.py && python3 assets/banner.py
+python3 assets/icon.py && python3 assets/banner.py --og docs/assets/og.png
 cargo build --release && python3 assets/screenshots.py
 ```
+
+The landing page has its own tests (`python3 -m unittest discover -s site/tests`,
+`node --test site/tests/main.test.mjs`) and builds with `python3 site/build.py --out _site`.
 
 ## License
 
