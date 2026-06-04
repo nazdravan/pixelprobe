@@ -7,6 +7,7 @@ scaled down. Writes:
   assets/icon.png               256x256, window icon and favicon
   assets/pixelprobe.ico         16...256, Windows
   assets/pixelprobe.icns        16...1024, badge at 824/1024 of the square (Apple grid), macOS
+  assets/icon-macos.png         256x256 with the same margin, the run-time Dock icon
   docs/assets/pixelprobe-mark.png  512x512, README header
 
 Usage: python3 assets/icon.py [--sheet out.png]   (--sheet: preview at 16, 32, 64, 256 px)
@@ -136,6 +137,8 @@ def main():
     ico = [badge(s) for s in (16, 24, 32, 48, 64, 128, 256)]
     ico[-1].save(ROOT / "assets" / "pixelprobe.ico", sizes=[i.size for i in ico], append_images=ico[:-1])
     write_icns(ROOT / "assets" / "pixelprobe.icns")
+    # The window/Dock icon eframe sets at run time on macOS, with the Apple-grid margin.
+    apple_grid(256).save(ROOT / "assets" / "icon-macos.png", optimize=True)
     (ROOT / "docs" / "assets").mkdir(parents=True, exist_ok=True)
     full.resize((512, 512), Image.LANCZOS).save(ROOT / "docs" / "assets" / "pixelprobe-mark.png", optimize=True)
 
@@ -155,7 +158,7 @@ def main():
         both.paste(sheet, (0, 0))
         both.paste(dark, (0, sheet.height))
         both.save(a.sheet)
-    print("assets/icon.png, assets/pixelprobe.ico, assets/pixelprobe.icns, docs/assets/pixelprobe-mark.png")
+    print("assets/icon.png, icon-macos.png, pixelprobe.ico, pixelprobe.icns, docs/assets/pixelprobe-mark.png")
 
 
 if __name__ == "__main__":

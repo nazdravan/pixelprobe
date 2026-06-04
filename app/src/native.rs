@@ -75,9 +75,14 @@ pub fn main() -> ExitCode {
     }
 }
 
-/// The window icon, drawn by `assets/icon.py`. A broken PNG means no icon, not a crash.
+/// The window icon, drawn by `assets/icon.py`; on macOS the variant with Apple's icon-grid
+/// margin, so it sits in the Dock like other apps. A broken PNG means no icon, not a crash.
 fn app_icon() -> egui::IconData {
-    eframe::icon_data::from_png_bytes(include_bytes!("../../assets/icon.png")).unwrap_or_default()
+    #[cfg(target_os = "macos")]
+    let png = include_bytes!("../../assets/icon-macos.png");
+    #[cfg(not(target_os = "macos"))]
+    let png = include_bytes!("../../assets/icon.png");
+    eframe::icon_data::from_png_bytes(png).unwrap_or_default()
 }
 
 struct App {

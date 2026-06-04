@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Windows 10/11 x64 installer (WiX Toolset v5), built by packaging/windows/msi.ps1 from the
+  folder package.ps1 prepares. No dialogs: it installs into Program Files\pixelprobe with a
+  Start menu shortcut, and appears in Settings > Apps for removal.
+  UpgradeCode never changes: by it, a newer version replaces the installed one.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="pixelprobe" Manufacturer="nazdravan" Version="$(Version)"
+           UpgradeCode="6A70CDCC-01F6-4540-A0D9-D8B36EE92742" Scope="perMachine" Compressed="yes">
+    <SummaryInformation Description="pixelprobe - monitor test utility" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of pixelprobe is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon" SourceFile="$(Icon)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/nazdravan/pixelprobe" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/nazdravan/pixelprobe/issues" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="pixelprobe">
+        <Component Id="MainExecutable">
+          <File Id="MainExe" Source="$(Stage)\pixelprobe.exe" KeyPath="yes" />
+        </Component>
+        <Files Include="$(Stage)\*.txt" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut">
+        <Shortcut Id="AppShortcut" Name="pixelprobe" Description="Monitor test utility"
+                  Target="[INSTALLFOLDER]pixelprobe.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+        <RegistryValue Root="HKLM" Key="Software\nazdravan\pixelprobe" Name="StartMenuShortcut"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+  </Package>
+</Wix>

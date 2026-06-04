@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=pixelprobe
+GenericName=Monitor test utility
+Comment=Display information, test patterns, motion test and pixel refresh
+Exec=pixelprobe
+Icon=pixelprobe
+Terminal=false
+Categories=Utility;System;Monitor;
+Keywords=monitor;display;screen;test;pattern;dead pixel;stuck pixel;

@@ -24,6 +24,10 @@ pp-edid.workspace = true
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
 
+# The icon and file description inside pixelprobe.exe (build.rs, Windows targets only).
+[build-dependencies]
+winresource = "0.1"
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
 # Same web-sys as eframe; only the extra APIs used here.

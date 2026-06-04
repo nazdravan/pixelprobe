@@ -18,7 +18,7 @@ patterns and a motion test, and run pixel refresh noise over stuck pixels.**
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)](#windows-and-linux)
 [![Web](https://img.shields.io/badge/Web-WASM-654FF0?style=flat-square&logo=webassembly&logoColor=white)](#web)
 
-[Quick start](#quick-start) · [Features](#features) · [Keyboard shortcuts](#keyboard-shortcuts) · [Design decisions](#design-decisions) · [Code structure](#code-structure) · [Releases](../../releases) · [Issues](../../issues)
+[Quick start](#quick-start) · [Features](#features) · [Keyboard shortcuts](#keyboard-shortcuts) · [Design decisions](#design-decisions) · [Code structure](#code-structure) · [Changes](CHANGELOG.md) · [Releases](../../releases) · [Issues](../../issues)
 
 </div>
 
@@ -33,8 +33,28 @@ and the monitors' own EDID.
 
 ## Quick start
 
-There is no packaged release yet; installers for Windows, macOS and Linux will appear on the
-[Releases](../../releases) page with the first one. Until then, build from source.
+Packages for Windows, macOS and Linux are published on the [Releases](../../releases) page by
+the release workflow; there is no published release yet, so for now build from source. Each
+release will have:
+
+```
+pixelprobe-<version>-linux-x86_64.AppImage        # Linux, one file
+pixelprobe-<version>-linux-x86_64.deb             # Ubuntu / Debian / Mint
+pixelprobe-<version>-linux-x86_64.tar.gz          # Linux, archive
+pixelprobe-<version>-macos-universal.dmg          # macOS (Apple Silicon and Intel)
+pixelprobe-<version>-windows-x64.msi              # Windows 10/11, installer
+pixelprobe-<version>-windows-x64-portable.zip     # Windows 10/11, no installation
+SHA256SUMS.txt                                    # checksums
+```
+
+- **Windows:** the `.msi` installs pixelprobe into *Program Files* with a Start menu entry;
+  the `.zip` needs no installation. The files are not signed, so SmartScreen asks on first
+  start: *More info → Run anyway*.
+- **Linux:** make the AppImage executable and start it
+  (`chmod +x pixelprobe-*.AppImage && ./pixelprobe-*.AppImage`), or install the `.deb`
+  (`sudo apt install ./pixelprobe-*.deb`).
+- **macOS:** open the `.dmg` and drag `pixelprobe.app` onto *Applications*. It is not signed
+  with an Apple certificate, so the first start is blocked; see [macOS](#macos).
 
 ### From source
 
@@ -140,6 +160,15 @@ Where pixelprobe differs from what a reader of the original program might expect
 
 ## macOS
 
+The `.dmg` holds one `pixelprobe.app` for Apple Silicon and Intel Macs, macOS 10.13 and newer.
+It has only an ad-hoc signature, so Gatekeeper blocks the first start: right-click → *Open*
+(on macOS 15 and newer: *System Settings → Privacy & Security → Open Anyway*), or once in
+Terminal:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/pixelprobe.app
+```
+
 Monitor names, physical size, graphics adapter and refresh rate come from the system
 (AppKit, CoreGraphics, Metal). Checked on an iMac 21.5″ 4K: 479 × 270 mm, 217 ppi, 59 Hz,
 AMD Radeon Pro 555, all ten display modes, exclusive full screen in a chosen mode.
@@ -177,12 +206,17 @@ rate, physical size or modes), and full screen uses the browser's Fullscreen API
 | `crates/pp-control` | local control channel (`--control PORT`, JSON lines on 127.0.0.1) for scripting and screenshots |
 | `crates/pp-ui` | the egui screens and the theme |
 | `app/` | the desktop and web program: monitor enumeration, full screen, EDID sources |
+| `packaging/` | release packages: AppImage, `.deb` and `.tar.gz` for Linux, `.app` and `.dmg` for macOS, `.msi` and `.zip` for Windows; `version.sh`, `changelog.sh` |
 | `xtask/` | `cargo xtask ci` (format, lint, tests, layer rules, wasm check) and `cargo xtask web` |
 | `assets/` | `theme.toml` (all colours), `icon.py` (logo and icons), `banner.py` (this README's banner), `screenshots.py` (these screenshots, taken by the app), fonts |
 
 ## Release
 
-No release has been published yet. The version is in `Cargo.toml`.
+The version lives in one place, `Cargo.toml`, and is changed with
+`packaging/version.sh set 0.2.0`. Releases are **automatic**: a push to `main` with a version
+that is not yet published builds the packages for every platform on GitHub Actions and
+publishes the release, with the notes from [`CHANGELOG.md`](CHANGELOG.md). A push with the
+same version only runs the tests. Details in [`docs/releasing.md`](docs/releasing.md).
 
 ## Tests
 
