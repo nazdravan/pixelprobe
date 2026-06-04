@@ -26,7 +26,10 @@ pub fn main() {
             .start(
                 canvas,
                 eframe::WebOptions::default(),
-                Box::new(|_cc| Ok(Box::new(WebApp::default()))),
+                Box::new(|cc| {
+                    pp_ui::theme::apply(&cc.egui_ctx);
+                    Ok(Box::new(WebApp::default()))
+                }),
             )
             .await;
         if let Err(e) = started {

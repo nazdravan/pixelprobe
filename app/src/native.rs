@@ -39,13 +39,15 @@ pub fn main() -> ExitCode {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("pixelprobe")
-            .with_inner_size([740.0, 620.0]),
+            .with_inner_size([740.0, 620.0])
+            .with_icon(app_icon()),
         ..Default::default()
     };
     let result = eframe::run_native(
         "pixelprobe",
         options,
         Box::new(move |cc| {
+            pp_ui::theme::apply(&cc.egui_ctx);
             let control = match args.control {
                 None => None,
                 Some(port) => {
@@ -71,6 +73,11 @@ pub fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// The window icon, drawn by `assets/icon.py`. A broken PNG means no icon, not a crash.
+fn app_icon() -> egui::IconData {
+    eframe::icon_data::from_png_bytes(include_bytes!("../../assets/icon.png")).unwrap_or_default()
 }
 
 struct App {
@@ -174,5 +181,12 @@ mod tests {
         assert!(p(&["--control"]).is_err());
         assert!(p(&["--control", "99999"]).is_err());
         assert!(p(&["--bogus"]).is_err());
+    }
+
+    #[test]
+    fn icon_decodes() {
+        let icon = app_icon();
+        assert_eq!((icon.width, icon.height), (256, 256));
+        assert_eq!(icon.rgba.len(), 256 * 256 * 4);
     }
 }

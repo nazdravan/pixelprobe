@@ -142,6 +142,8 @@ fn web() -> Res {
     }
     std::fs::copy("app/web/index.html", format!("{WEB_OUT}/index.html"))
         .map_err(|e| format!("cannot copy index.html: {e}"))?;
+    std::fs::copy("assets/icon.png", format!("{WEB_OUT}/icon.png"))
+        .map_err(|e| format!("cannot copy icon.png: {e}"))?;
     eprintln!("web build in {WEB_OUT}; serve it, e.g. python3 -m http.server -d {WEB_OUT}");
     Ok(())
 }

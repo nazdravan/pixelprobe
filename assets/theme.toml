@@ -1,0 +1,34 @@
+# pixelprobe theme: the single source of colours for the app (pp-ui/src/theme.rs, checked by a
+# test), the icon (assets/icon.py), the README banner and the landing page.
+
+name = "pixelprobe"
+
+# Motif: SMPTE colour bars on a monitor, the app's own subject (SMPTE RP 219 order:
+# white, yellow, cyan, green, magenta, red, blue).
+motif = "SMPTE colour bars on a monitor"
+bars = ["#ffffff", "#ffff00", "#00ffff", "#00ff00", "#ff00ff", "#ff0000", "#0000ff"]
+
+# Accent: the bars' cyan, darkened so white text on it passes WCAG AA (5.4:1).
+accent = "#0e7490"
+accent_press = "#155e75"
+# Accent used as text/lines on dark backgrounds.
+accent_light = "#22d3ee"
+
+# Backgrounds and text. The app follows the system light/dark setting.
+bg_dark = "#0d1017"
+panel_dark = "#151a23"
+fg_dark = "#e6e9ef"
+bg_light = "#f6f7f9"
+panel_light = "#ffffff"
+fg_light = "#141820"
+
+# The icon badge: a vertical gradient from top to bottom.
+badge_top = "#232a38"
+badge_bottom = "#0d1017"
+# Monitor bezel and stand, and the magnifier ring.
+bezel = "#3a4457"
+ring = "#e6e9ef"
+
+# UI text keeps egui's built-in fonts in the app; the banner and landing page use this one
+# (bundled with its licence when S2/S5 need it).
+font = "Inter"

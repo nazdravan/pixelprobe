@@ -10,6 +10,7 @@ mod motion_view;
 mod pattern_view;
 pub(crate) mod pixel_refresh;
 pub mod shortcuts;
+pub mod theme;
 mod widgets;
 
 pub use egui;
