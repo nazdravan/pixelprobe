@@ -1,33 +1,204 @@
-# pixelprobe
+<div align="center">
 
-A monitor test utility written in Rust (egui/eframe, desktop + web).
+<p align="center">
+  <img src="docs/assets/pixelprobe-mark.png" alt="pixelprobe" width="130">
+</p>
 
-- **Display information**: the monitors, their properties (resolution, physical size,
-  pixels per inch, diagonal, aspect ratios, refresh rate, colour depth) and display modes.
-- **Pattern test**: full-screen patterns at the display's own resolution: SMPTE RP 219
-  colour bars (with the standard's *2/*3 sub-pattern options), solid colours, gradients,
-  black/white level patches, grid, checkerboards. Optionally in a chosen display mode.
-- **Motion test**: a moving square or circle with adjustable update rate, size, colours and
-  step, for blur and ghosting.
-- **Pixel refresh**: random red/green/blue/white/black noise to exercise stuck pixels, in a
-  window or full screen.
+<img src="docs/assets/pixelprobe-banner.png" alt="pixelprobe" />
 
-Press F1 in the app for help and the list of keyboard shortcuts.
+**A monitor test utility: see what your displays report, check them with full-screen test
+patterns and a motion test, and run pixel refresh noise over stuck pixels.**
 
-## Build
+[![CI](https://github.com/nazdravan/pixelprobe/actions/workflows/ci.yml/badge.svg)](https://github.com/nazdravan/pixelprobe/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0-0e7490?style=flat-square)](#license)
+[![Rust](https://img.shields.io/badge/Rust-1.99-0e7490?style=flat-square&logo=rust&logoColor=white)](rust-toolchain.toml)
+[![egui](https://img.shields.io/badge/UI-egui%20%2F%20eframe-0e7490?style=flat-square)](https://github.com/emilk/egui)
+[![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)](#macos)
+[![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)](#windows-and-linux)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)](#windows-and-linux)
+[![Web](https://img.shields.io/badge/Web-WASM-654FF0?style=flat-square&logo=webassembly&logoColor=white)](#web)
+
+[Quick start](#quick-start) · [Features](#features) · [Keyboard shortcuts](#keyboard-shortcuts) · [Design decisions](#design-decisions) · [Code structure](#code-structure) · [Releases](../../releases) · [Issues](../../issues)
+
+</div>
+
+<br />
+
+pixelprobe is written in **Rust** and inspired by the features of *Monitor Test Utility*. It is
+not affiliated with that program and uses none of its code or assets: test-pattern colours and
+geometry come from published standards (SMPTE RP 219), monitor data from the operating system
+and the monitors' own EDID.
+
+<img src="docs/assets/screenshot.png" alt="pixelprobe: monitor list, display properties and display modes" />
+
+## Quick start
+
+There is no packaged release yet; installers for Windows, macOS and Linux will appear on the
+[Releases](../../releases) page with the first one. Until then, build from source.
+
+### From source
+
+Install [Rust](https://rustup.rs), then in this folder:
 
 ```sh
-cargo run -p pixelprobe      # desktop app
-cargo xtask ci               # fmt, clippy -D warnings, tests, layer rules, wasm check
-cargo xtask web              # web build into target/web (needs wasm-bindgen-cli)
+cargo run --release          # starts the app
+```
+
+The right Rust version (`rust-toolchain.toml`) is installed automatically. The program is
+`target/release/pixelprobe` (`pixelprobe.exe` on Windows); it is a single file and needs nothing
+else next to it. On Linux, building needs the X11/Wayland development packages that eframe uses
+(see `.github/workflows/ci.yml` for the list on Ubuntu).
+
+---
+
+## Features
+
+| | |
+|---|---|
+| **Display information** | every monitor with its name, graphics adapter, resolution, scale, refresh rate, colour depth, physical size, diagonal, pixels per inch, aspect ratios, position and rotation, plus the display modes it supports |
+| **Pattern test** | 15 full-screen patterns at the display's own resolution: SMPTE colour bars, solid colours, gray 50 %, gray ramp and steps, RGB ramps, black and white level patches, a grid and two checkerboards |
+| **Motion test** | a square or circle moving across the screen at 5 to 240 steps per second, for blur, ghosting and uneven motion |
+| **Pixel refresh** | random red, green, blue, white and black cells, in a window or full screen, to exercise stuck pixels |
+| **Test mode** | run the tests full screen on any monitor, optionally switched to a chosen display mode and restored afterwards |
+| **Interface** | dark and light theme following the system, keyboard shortcuts, undo for every setting, help screen (F1) |
+
+### Pattern test
+
+<img src="docs/assets/pattern-test.png" alt="SMPTE colour bars with the pattern toolbar" />
+
+- the patterns fill the selected monitor at its own resolution, one image pixel per screen pixel;
+- **SMPTE bars** follow SMPTE RP 219:2002, with the standard's sub-pattern options: 75 % or
+  100 % white, +I, and −I with +Q (**V** or the toolbar button cycles them);
+- the toolbar at the top (pattern name, previous / next, close) and the mouse cursor hide after
+  3 seconds without movement; ← and → change the pattern, Esc closes.
+
+### Motion test
+
+<img src="docs/assets/motion-test.png" alt="Motion test: a white square on black, with the settings bar" />
+
+- shape: square or circle, filled or hollow; size small, medium or large; shape and background
+  colours with a swap (**S**);
+- movement pixel by pixel (1/16 of the shape) or shape by shape; speed from 5 to 240 steps per
+  second (↑ / ↓);
+- the bar shows the update interval and rate, the display's refresh rate and the rate the app
+  actually draws at. Setting the update rate close to the refresh rate gives the clearest picture.
+
+### Pixel refresh
+
+<img src="docs/assets/pixel-refresh.png" alt="Pixel refresh noise in the main window" />
+
+- red, green, blue, white and black cells change many times a second (1 to 60 updates per
+  second, ↑ / ↓), with the elapsed time;
+- in the window, move the stuck pixel under the noise; **F** or *Full screen* covers the whole
+  display. It can bring a stuck pixel back; a dead (always black) pixel cannot be fixed.
+
+### Keyboard shortcuts
+
+Cmd is the Command key on macOS and Ctrl elsewhere. Keys work on the screen they belong to.
+
+<!-- shortcuts:start -->
+| Key | Action |
+|---|---|
+| `Cmd+Shift+Z` | Edit › Redo |
+| `Cmd+Z` | Edit › Undo |
+| `Down` | Motion › Slower |
+| `Down` | Pixel Refresh › Slower |
+| `Escape` | View › Close |
+| `F` | Pixel Refresh › Full Screen |
+| `F1` | Help › Help |
+| `F5` | Display › Refresh |
+| `Left` | Pattern › Previous |
+| `M` | Tests › Motion Test |
+| `P` | Tests › Pattern Test |
+| `R` | Tests › Pixel Refresh |
+| `Right` | Pattern › Next |
+| `S` | Motion › Swap Colours |
+| `Up` | Motion › Faster |
+| `Up` | Pixel Refresh › Faster |
+| `V` | Pattern › Next SMPTE Sub-pattern |
+<!-- shortcuts:end -->
+
+This table is checked against the app's command list by a test.
+
+---
+
+## Design decisions
+
+Where pixelprobe differs from what a reader of the original program might expect:
+
+- **Colour planes** are not shown: current graphics APIs no longer report them.
+- **Interlaced modes** are not marked in the display modes list: the windowing library does not
+  report it, and current displays are progressive.
+- **Pixel refresh, help and about** are screens of the main window, not separate dialogs; pixel
+  refresh also has a full-screen mode.
+- **The pattern list, the speed ranges and the motion step** (1/16 of the shape) are pixelprobe's
+  own choices.
+- **Settings are undoable**: every change goes through a command, so Cmd+Z / Cmd+Shift+Z work
+  on test settings too.
+
+---
+
+## macOS
+
+Monitor names, physical size, graphics adapter and refresh rate come from the system
+(AppKit, CoreGraphics, Metal). Checked on an iMac 21.5″ 4K: 479 × 270 mm, 217 ppi, 59 Hz,
+AMD Radeon Pro 555, all ten display modes, exclusive full screen in a chosen mode.
+
+## Windows and Linux
+
+Physical size, monitor names and the graphics adapter are read from the monitors' EDID: from the
+registry on Windows, from `/sys/class/drm` on Linux. Both platforms build and pass the test
+suite on GitHub Actions. **Note:** the app has not yet been started on a real Windows or Linux
+machine.
+
+## Web
+
+`cargo xtask web` builds a browser version into `target/web` (it needs the `wasm-bindgen` CLI at
+the version in `Cargo.lock`):
+
+```sh
+cargo xtask web
 python3 -m http.server -d target/web   # then open http://localhost:8000
 ```
 
-Requires a rustup toolchain (see `rust-toolchain.toml`; the wasm target is installed
-automatically). The `wasm-bindgen` CLI must match the `wasm-bindgen` version in `Cargo.lock`.
-
 In the browser, display information is limited to what `window.screen` reports (no refresh
 rate, physical size or modes), and full screen uses the browser's Fullscreen API.
+
+---
+
+## Code structure
+
+| Path | Contents |
+|---|---|
+| `crates/pp-core` | data model: patterns, test settings, display information |
+| `crates/pp-patterns` | test images: SMPTE bars, ramps, checkerboards, motion steps, refresh noise |
+| `crates/pp-edid` | EDID parser (VESA E-EDID 1.4) and matching EDIDs to monitors |
+| `crates/pp-engine` | the session, the command list with shortcuts, undo history |
+| `crates/pp-control` | local control channel (`--control PORT`, JSON lines on 127.0.0.1) for scripting and screenshots |
+| `crates/pp-ui` | the egui screens and the theme |
+| `app/` | the desktop and web program: monitor enumeration, full screen, EDID sources |
+| `xtask/` | `cargo xtask ci` (format, lint, tests, layer rules, wasm check) and `cargo xtask web` |
+| `assets/` | `theme.toml` (all colours), `icon.py` (logo and icons), `banner.py` (this README's banner), `screenshots.py` (these screenshots, taken by the app), fonts |
+
+## Release
+
+No release has been published yet. The version is in `Cargo.toml`.
+
+## Tests
+
+```sh
+cargo xtask ci
+```
+
+Runs formatting and lint checks, the tests (pattern pixel values against SMPTE RP 219, EDID
+parsing on a real monitor's EDID, property tests on untrusted input, and headless UI tests that
+click the real buttons), the layer rules and the web build check. GitHub Actions runs the same
+on macOS, Windows and Linux. The images in `docs/assets/` are regenerated with:
+
+```sh
+python3 assets/icon.py && python3 assets/banner.py
+cargo build --release && python3 assets/screenshots.py
+```
 
 ## License
 
@@ -41,3 +212,6 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion
 in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above,
 without any additional terms or conditions.
+
+The Inter font in `assets/fonts/` (used for the banner) is under the SIL Open Font License 1.1,
+see `assets/fonts/Inter-LICENSE.txt`.

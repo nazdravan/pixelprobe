@@ -434,3 +434,29 @@ fn screens_keep_their_layout_in_an_app_sized_window() {
         .unwrap();
     assert!(close.max.y > 560.0, "help: Close at the bottom: {close:?}");
 }
+
+/// The README's shortcut table, as the command registry would write it.
+fn readme_shortcuts(engine: &Engine) -> String {
+    let mut out = String::from("| Key | Action |\n|---|---|\n");
+    for (key, menu) in crate::help::shortcut_rows(engine) {
+        out.push_str(&format!("| `{key}` | {} |\n", menu.replace('/', " › ")));
+    }
+    out
+}
+
+#[test]
+fn readme_shortcut_table_matches_the_registry() {
+    let readme = include_str!("../../../README.md");
+    let table = readme_shortcuts(&Engine::new());
+    let start = "<!-- shortcuts:start -->\n";
+    let end = "<!-- shortcuts:end -->";
+    let found = readme
+        .split_once(start)
+        .and_then(|(_, rest)| rest.split_once(end))
+        .map(|(t, _)| t);
+    assert_eq!(
+        found,
+        Some(table.as_str()),
+        "README table should be:\n{table}"
+    );
+}
