@@ -18,7 +18,7 @@ patterns and a motion test, and run pixel refresh noise over stuck pixels.**
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)](#windows-and-linux)
 [![Web](https://img.shields.io/badge/Web-WASM-654FF0?style=flat-square&logo=webassembly&logoColor=white)](#web)
 
-[Quick start](#quick-start) · [Features](#features) · [Keyboard shortcuts](#keyboard-shortcuts) · [Design decisions](#design-decisions) · [Code structure](#code-structure) · [Changes](CHANGELOG.md) · [Releases](../../releases) · [Issues](../../issues)
+[**Website**](https://nazdravan.github.io/pixelprobe/) · [Run in the browser](https://nazdravan.github.io/pixelprobe/app/) · [Quick start](#quick-start) · [Features](#features) · [Keyboard shortcuts](#keyboard-shortcuts) · [Design decisions](#design-decisions) · [Code structure](#code-structure) · [Changes](CHANGELOG.md) · [Releases](../../releases) · [Issues](../../issues)
 
 </div>
 
