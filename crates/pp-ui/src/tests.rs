@@ -446,7 +446,8 @@ fn readme_shortcuts(engine: &Engine) -> String {
 
 #[test]
 fn readme_shortcut_table_matches_the_registry() {
-    let readme = include_str!("../../../README.md");
+    // Windows checkouts may turn line ends into CRLF.
+    let readme = include_str!("../../../README.md").replace("\r\n", "\n");
     let table = readme_shortcuts(&Engine::new());
     let start = "<!-- shortcuts:start -->\n";
     let end = "<!-- shortcuts:end -->";
