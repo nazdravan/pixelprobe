@@ -10,7 +10,7 @@
 patterns and a motion test, and run pixel refresh noise over stuck pixels.**
 
 [![CI](https://github.com/nazdravan/pixelprobe/actions/workflows/ci.yml/badge.svg)](https://github.com/nazdravan/pixelprobe/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0-0e7490?style=flat-square)](#license)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-0e7490?style=flat-square)](#license)
 [![Rust](https://img.shields.io/badge/Rust-1.99-0e7490?style=flat-square&logo=rust&logoColor=white)](rust-toolchain.toml)
 [![egui](https://img.shields.io/badge/UI-egui%20%2F%20eframe-0e7490?style=flat-square)](https://github.com/emilk/egui)
 [![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)](#macos)
