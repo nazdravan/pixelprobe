@@ -23,11 +23,14 @@ install -m 644 README.md "$pkgroot/usr/share/doc/pixelprobe/README.md"
     echo "Source: https://github.com/nazdravan/pixelprobe"
     echo
     echo "Files: *"
+    echo "Copyright: $(sed -n 's/^Copyright (c) //p' LICENSE-MIT)"
     echo "License: MIT or Apache-2.0"
-    echo " On Debian systems, the Apache 2.0 text is in /usr/share/common-licenses/Apache-2.0."
-    echo " The MIT text follows."
-    echo " ."
+    echo
+    echo "License: MIT"
     sed 's/^/ /; s/^ $/ ./' LICENSE-MIT
+    echo
+    echo "License: Apache-2.0"
+    echo " On Debian systems, the full text is in /usr/share/common-licenses/Apache-2.0."
 } >"$pkgroot/usr/share/doc/pixelprobe/copyright"
 
 # Debian versions use ~ for pre-releases: 0.2.0-rc.1 -> 0.2.0~rc.1.
