@@ -251,5 +251,9 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above,
 without any additional terms or conditions.
 
-The Inter font in `assets/fonts/` (used for the banner) is under the SIL Open Font License 1.1,
-see `assets/fonts/Inter-LICENSE.txt`.
+Copyright (c) 2025 Nicolae Postica.
+
+egui's fonts built into the program (Ubuntu Light, Hack, Noto Emoji, emoji-icon-font), the Rust
+crates and the Inter font in `assets/fonts/` (used for the banner and the landing page) keep their
+own licences, listed in [NOTICE](NOTICE). Every package carries `NOTICE` and `THIRD-PARTY.txt`,
+with the full licence text of each crate and font.

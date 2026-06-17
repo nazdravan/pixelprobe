@@ -12,6 +12,7 @@ stage=$ROOT/dist/stage/$name
 rm -rf "$stage" "$OUT/$name.tar.gz"
 mkdir -p "$stage" "$OUT"
 install -m 755 target/release/pixelprobe "$stage/pixelprobe"
-install -m 644 packaging/linux/pixelprobe.desktop assets/icon.png README.md LICENSE-MIT LICENSE-APACHE "$stage/"
+install -m 644 packaging/linux/pixelprobe.desktop assets/icon.png README.md "$stage/"
+copy_docs "$stage"
 tar -C "$ROOT/dist/stage" -czf "$OUT/$name.tar.gz" "$name"
 echo "done: $OUT/$name.tar.gz"

@@ -1,4 +1,7 @@
-//! Project automation: `cargo xtask <ci|fmt|clippy|test|layers|wasm|web>`.
+//! Project automation: `cargo xtask <ci|fmt|clippy|test|layers|wasm|licences|web>`.
+//!
+//! `licences`: every file in `assets/fonts/` and `site/assets/fonts/` (each font and its licence)
+//! is named in `NOTICE`, so a new font never ships without its licence.
 
 use std::collections::BTreeMap;
 use std::process::{Command, ExitCode};
@@ -18,9 +21,10 @@ fn main() -> ExitCode {
         "test" => test(),
         "layers" => layers(),
         "wasm" => wasm(),
+        "licences" => licences(),
         "web" => web(),
         _ => {
-            eprintln!("usage: cargo xtask <ci|fmt|clippy|test|layers|wasm|web>");
+            eprintln!("usage: cargo xtask <ci|fmt|clippy|test|layers|wasm|licences|web>");
             return ExitCode::from(2);
         }
     };
@@ -42,6 +46,7 @@ fn ci() -> Res {
         ("test", test),
         ("layers", layers),
         ("wasm", wasm),
+        ("licences", licences),
     ] {
         eprintln!("== xtask ci: {name}");
         step()?;
@@ -150,6 +155,46 @@ fn web() -> Res {
 
 /// Every workspace crate declares `[package.metadata.pixelprobe] layer = N`; a crate may
 /// depend only on workspace crates of a lower layer, and nothing below L6 may pull in UI crates.
+/// Folders whose files reach users and must be named in `NOTICE`.
+const FONT_DIRS: &[&str] = &["assets/fonts", "site/assets/fonts"];
+
+fn licences() -> Res {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("xtask has no parent directory")?;
+    let notice =
+        std::fs::read_to_string(root.join("NOTICE")).map_err(|e| format!("NOTICE: {e}"))?;
+    let mut paths = Vec::new();
+    for dir in FONT_DIRS {
+        let entries = std::fs::read_dir(root.join(dir)).map_err(|e| format!("{dir}: {e}"))?;
+        for name in entries.filter_map(|e| e.ok()?.file_name().into_string().ok()) {
+            paths.push(format!("{dir}/{name}"));
+        }
+    }
+    let missing = not_in_notice(&notice, &paths);
+    if missing.is_empty() {
+        eprintln!("licences: {} font files, each named in NOTICE", paths.len());
+        Ok(())
+    } else {
+        Err(format!(
+            "font files not named in NOTICE (add the font and its licence): {}",
+            missing.join(", ")
+        ))
+    }
+}
+
+/// The paths that NOTICE does not mention (dot files skipped), sorted.
+fn not_in_notice(notice: &str, paths: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = paths
+        .iter()
+        .filter(|p| !p.rsplit('/').next().is_some_and(|n| n.starts_with('.')))
+        .filter(|p| !notice.contains(p.as_str()))
+        .cloned()
+        .collect();
+    out.sort();
+    out
+}
+
 fn layers() -> Res {
     let out = Command::new(env_cargo())
         .args(["metadata", "--format-version", "1", "--no-deps"])
@@ -202,5 +247,22 @@ fn layers() -> Res {
         Ok(())
     } else {
         Err(errors.join("; "))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::not_in_notice;
+
+    #[test]
+    fn a_font_missing_from_notice_is_reported() {
+        let paths = [
+            "assets/fonts/Inter-Bold.ttf",
+            "assets/fonts/New.ttf",
+            "site/assets/fonts/.DS_Store",
+        ]
+        .map(String::from);
+        let notice = "Inter (assets/fonts/Inter-Bold.ttf)";
+        assert_eq!(not_in_notice(notice, &paths), ["assets/fonts/New.ttf"]);
     }
 }

@@ -28,7 +28,7 @@ sed -e "s/@VERSION@/$VERSION/g" -e "s/@MIN_MACOS@/$MACOSX_DEPLOYMENT_TARGET/g" \
     packaging/macos/Info.plist >"$app/Contents/Info.plist"
 plutil -lint "$app/Contents/Info.plist"
 cp assets/pixelprobe.icns "$app/Contents/Resources/pixelprobe.icns"
-cp LICENSE-MIT LICENSE-APACHE "$app/Contents/Resources/"
+copy_docs "$app/Contents/Resources"
 
 # Ad-hoc signature: without one the app does not even start on Apple Silicon. It is not a
 # Developer ID signature, so Gatekeeper still asks on first start (see the README).

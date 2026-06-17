@@ -77,6 +77,22 @@ of the run and no release is created.
 Every script in `packaging/` also runs locally (the macOS one only on a Mac); the output goes
 to `dist/release/`.
 
+## Licences in the packages
+
+Every package carries `LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE` and `THIRD-PARTY.txt`. The
+packaging scripts copy them only through `copy_docs` (`packaging/env.sh`; in `package.ps1`,
+`Copy-Docs`).
+
+- `THIRD-PARTY.txt` is generated, not in git: `packaging/licences.sh` (needs
+  `cargo install cargo-about --locked --features cli --version <CARGO_ABOUT_VERSION from env.sh>`)
+  writes it to `dist/` with the licence of every crate and of egui's fonts. In CI the `licences`
+  job makes it on every run, and fails if a crate has a licence that is not in `about.toml`.
+- After an egui update the checksums in `[epaint_default_fonts.clarify]` (`about.toml`) stop
+  matching and `packaging/licences.sh` stops: check the crate's `fonts/*.txt` and update the sums
+  (`shasum -a 256`).
+- A new file in `assets/fonts/` or `site/assets/fonts/` must be named in `NOTICE`, with its
+  licence: otherwise `cargo xtask licences` (part of `cargo xtask ci`) fails.
+
 ## Good to know
 
 - **The files are not signed.** On first start (and when installing the `.msi`), Windows

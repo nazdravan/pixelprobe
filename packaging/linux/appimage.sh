@@ -30,7 +30,8 @@ mkdir -p "$appdir/usr/bin" "$appdir/usr/share/applications" \
 install -m 755 target/release/pixelprobe "$appdir/usr/bin/pixelprobe"
 cp packaging/linux/pixelprobe.desktop "$appdir/usr/share/applications/"
 cp assets/icon.png "$appdir/usr/share/icons/hicolor/256x256/apps/pixelprobe.png"
-cp README.md LICENSE-MIT LICENSE-APACHE "$appdir/usr/share/doc/pixelprobe/"
+cp README.md "$appdir/usr/share/doc/pixelprobe/"
+copy_docs "$appdir/usr/share/doc/pixelprobe"
 # appimagetool wants the .desktop file and the icon in the AppDir root too.
 ln -s usr/share/applications/pixelprobe.desktop "$appdir/pixelprobe.desktop"
 ln -s usr/share/icons/hicolor/256x256/apps/pixelprobe.png "$appdir/pixelprobe.png"

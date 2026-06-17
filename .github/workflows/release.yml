@@ -116,9 +116,35 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo xtask ci
 
+  licences:
+    name: licences
+    needs: version
+    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: licences
+      # On every run: a crate under a licence not accepted in about.toml stops the build.
+      - name: cargo-about
+        run: |
+          . packaging/env.sh
+          if [ "$(cargo about --version 2>/dev/null)" != "cargo-about $CARGO_ABOUT_VERSION" ]; then
+            cargo install cargo-about --locked --features cli --version "$CARGO_ABOUT_VERSION"
+          fi
+      - run: packaging/licences.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: third-party
+          path: dist/THIRD-PARTY.txt
+          if-no-files-found: error
+
   linux:
     name: Linux x86_64
-    needs: [version, test]
+    needs: [version, test, licences]
     if: needs.version.outputs.build == 'true'
     timeout-minutes: 45
     # The oldest supported Ubuntu, so the binary runs on glibc 2.35 and newer.
@@ -127,6 +153,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The crate licences, generated once by the licences job; copy_docs needs them.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: third-party
+          path: dist
       - name: Linux libraries for eframe/winit
         run: |
           sudo apt-get update
@@ -148,7 +179,7 @@ jobs:
 
   windows:
     name: Windows x64
-    needs: [version, test]
+    needs: [version, test, licences]
     if: needs.version.outputs.build == 'true'
     timeout-minutes: 45
     runs-on: windows-2025
@@ -156,6 +187,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The crate licences, generated once by the licences job; copy_docs needs them.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: third-party
+          path: dist
       - name: Apply the test version
         if: github.event_name == 'workflow_dispatch'
         shell: bash
@@ -176,7 +212,7 @@ jobs:
 
   macos:
     name: macOS universal
-    needs: [version, test]
+    needs: [version, test, licences]
     if: needs.version.outputs.build == 'true'
     timeout-minutes: 45
     runs-on: macos-26
@@ -184,6 +220,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The crate licences, generated once by the licences job; copy_docs needs them.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: third-party
+          path: dist
       - name: Apply the test version
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -198,7 +239,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [version, linux, windows, macos]
+    needs: [version, licences, linux, windows, macos]
     if: needs.version.outputs.publish == 'true'
     timeout-minutes: 15
     runs-on: ubuntu-24.04
