@@ -5,6 +5,15 @@ All notable changes to pixelprobe. The format follows
 [Semantic Versioning](https://semver.org/). Each version's section is also the text of its
 GitHub release.
 
+## [Unreleased]
+
+### Added
+
+- **About... → Check for updates…** finds a newer release and installs it (`.msi`, portable
+  `.zip`, `.deb`, AppImage, `.dmg`), then restarts pixelprobe; for `.tar.gz` it opens the release
+  page. Nothing is checked on its own, only when the button is pressed (the web version has no
+  button). `pixelprobe --check-update` prints what a check finds.
+
 ## [0.1.0] — 2026-11-01
 
 ### Added

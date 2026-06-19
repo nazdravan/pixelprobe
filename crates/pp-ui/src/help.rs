@@ -88,6 +88,13 @@ pub fn about(ui: &mut egui::Ui, engine: &Engine, actions: &mut Vec<Action>) {
             ui.add_space(12.0);
             ui.label("Colour bars follow SMPTE RP 219:2002.");
             ui.hyperlink_to("Source code", "https://github.com/nazdravan/pixelprobe");
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                ui.add_space(12.0);
+                if ui.button("Check for updates…").clicked() {
+                    actions.push(Action::new(crate::CHECK_UPDATES));
+                }
+            }
             ui.add_space(18.0);
             command_button(ui, engine, "view.close", actions);
         });

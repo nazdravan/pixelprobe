@@ -20,6 +20,10 @@ pub use widgets::command_button;
 use pp_engine::pp_core::Screen;
 use pp_engine::{Engine, Value};
 
+/// Not an engine command: the desktop app's "Check for updates…" on the About screen (the web
+/// build has nothing to update and never shows it).
+pub const CHECK_UPDATES: &str = "app.check_updates";
+
 /// A command the user triggered this frame.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Action {

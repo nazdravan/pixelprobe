@@ -34,6 +34,14 @@ fn main_window_buttons_emit_commands() {
 }
 
 #[test]
+fn about_offers_update_check() {
+    assert_eq!(
+        click(Some("app.about"), "Check for updates…"),
+        vec![Action::new(CHECK_UPDATES)]
+    );
+}
+
+#[test]
 fn every_screen_renders_and_closes() {
     for id in ["test.motion", "test.pixel_refresh", "app.about", "app.help"] {
         assert_eq!(

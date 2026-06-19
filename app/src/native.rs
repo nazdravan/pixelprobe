@@ -3,6 +3,18 @@ use pp_ui::egui;
 use pp_ui::pp_engine::Engine;
 use std::process::ExitCode;
 
+/// What the updater needs to find, download and install a new release from GitHub.
+const PIXELPROBE: app_update::AppInfo = app_update::AppInfo {
+    name: "pixelprobe",
+    display_name: "pixelprobe",
+    repo: "nazdravan/pixelprobe",
+    version: env!("CARGO_PKG_VERSION"),
+    windows_exe: "pixelprobe.exe",
+    msi_registry_key: r"Software\nazdravan\pixelprobe",
+    deb_package: "pixelprobe",
+    mac_bundle: "pixelprobe.app",
+};
+
 /// Parsed command line.
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct Args {
@@ -29,6 +41,12 @@ pub fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String
 }
 
 pub fn main() -> ExitCode {
+    // `--check-update` prints what a check finds, without a window.
+    if let Some(code) = app_update::run_cli(&PIXELPROBE) {
+        return ExitCode::from(u8::try_from(code).unwrap_or(1));
+    }
+    // Leftovers of a previous update.
+    app_update::cleanup(&PIXELPROBE);
     let args = match parse_args(std::env::args().skip(1)) {
         Ok(a) => a,
         Err(msg) => {
@@ -63,6 +81,7 @@ pub fn main() -> ExitCode {
                 status: None,
                 full_screen: false,
                 displays_read: None,
+                updater: app_update::Updater::new(PIXELPROBE),
             }))
         }),
     );
@@ -94,6 +113,7 @@ struct App {
     full_screen: bool,
     /// When the displays were last read and the `display.refresh` count seen then.
     displays_read: Option<(f64, u64)>,
+    updater: app_update::Updater,
 }
 
 /// Re-read the displays this often, in seconds, to follow plugging and window moves.
@@ -161,8 +181,23 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.read_displays(ui.ctx(), frame);
         self.sync_viewport(ui.ctx(), frame);
-        crate::shell::frame(ui, &mut self.engine, &mut self.status);
+        let check_updates = crate::shell::frame(ui, &mut self.engine, &mut self.status);
         self.sync_viewport(ui.ctx(), frame);
+        let ctx = ui.ctx().clone();
+        if check_updates {
+            self.updater.check(&ctx);
+        }
+        if let Some(app_update::UpdaterEvent::RestartRequested) =
+            self.updater.show(&ctx, app_update::Lang::En)
+        {
+            match self.updater.restart() {
+                Ok(()) => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
+                Err(e) => {
+                    let texts = app_update::texts(app_update::Lang::En);
+                    self.status = Some(texts.error(&e).unwrap_or_else(|| e.to_string()));
+                }
+            }
+        }
     }
 }
 

@@ -19,6 +19,8 @@ pp-control.workspace = true
 winit = { version = "0.30.13", default-features = false }
 # Physical size, names and GPUs off macOS come from the monitors' EDIDs.
 pp-edid.workspace = true
+# "Check for updates…" on the About screen (GitHub Releases).
+app-update = { git = "https://github.com/nazdravan/app-update", rev = "2bd753dd0e53524a5aabc2b244b06569b9050386" }
 
 # Windows: EDIDs and adapter names from the registry (safe API).
 [target.'cfg(windows)'.dependencies]

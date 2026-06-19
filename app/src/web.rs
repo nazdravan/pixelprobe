@@ -106,7 +106,8 @@ impl eframe::App for WebApp {
                 .set_displays(screen_info().into_iter().collect());
             self.displays_read = Some(refreshes);
         }
-        crate::shell::frame(ui, &mut self.engine, &mut self.status);
+        // The web build shows no update button.
+        let _ = crate::shell::frame(ui, &mut self.engine, &mut self.status);
         let want = self.engine.doc().wants_full_screen();
         if want != self.full_screen {
             set_full_screen(want);

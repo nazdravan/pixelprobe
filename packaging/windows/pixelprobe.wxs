@@ -22,6 +22,11 @@
         <Component Id="MainExecutable">
           <File Id="MainExe" Source="$(Stage)\pixelprobe.exe" KeyPath="yes" />
         </Component>
+        <!-- The in-app updater recognises the MSI copy by this value (and reinstalls the MSI). -->
+        <Component Id="InstallFolderRegistry">
+          <RegistryValue Root="HKLM" Key="Software\nazdravan\pixelprobe" Name="InstallFolder"
+                         Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+        </Component>
         <Files Include="$(Stage)\*.txt" />
       </Directory>
     </StandardDirectory>

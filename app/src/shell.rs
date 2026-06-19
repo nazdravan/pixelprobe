@@ -5,7 +5,8 @@ use pp_ui::egui;
 use pp_ui::pp_engine::Engine;
 use pp_ui::pp_engine::pp_core::Screen;
 
-pub fn frame(ui: &mut egui::Ui, engine: &mut Engine, status: &mut Option<String>) {
+/// Returns whether "Check for updates…" was clicked (only the desktop build offers it).
+pub fn frame(ui: &mut egui::Ui, engine: &mut Engine, status: &mut Option<String>) -> bool {
     // Only the motion test keeps its controls in full screen.
     let doc = engine.doc();
     let hide_status = doc.wants_full_screen() && doc.screen != Screen::MotionTest;
@@ -25,14 +26,18 @@ pub fn frame(ui: &mut egui::Ui, engine: &mut Engine, status: &mut Option<String>
     // cannot corrupt the document; report it and keep running. (On wasm panics abort.)
     let shown = &*engine;
     let drawn = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| pp_ui::show(ui, shown)));
+    let mut check_updates = false;
     match drawn {
         Ok(actions) => {
             for action in actions {
-                if let Err(e) = engine.run(action.id, action.params) {
+                if action.id == pp_ui::CHECK_UPDATES {
+                    check_updates = true;
+                } else if let Err(e) = engine.run(action.id, action.params) {
                     *status = Some(e.to_string());
                 }
             }
         }
         Err(_) => *status = Some("internal error while drawing; see the log".into()),
     }
+    check_updates
 }
